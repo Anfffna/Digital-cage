@@ -2,23 +2,20 @@ using UnityEngine;
 
 public class DoorOpener : MonoBehaviour
 {
-    [SerializeField] private Animator animator;        // Animator двери
+    [SerializeField] private Animator animator;       // Animator двери
     [SerializeField] private KeyCode interactKey = KeyCode.E;
-    [SerializeField] private string triggerName = "Open";
+    [SerializeField] private string boolName = "isOpen";
 
-    private bool hasOpened = false;   // чтобы дверь не открывалась снова
-    private bool canInteract = false; // флаг: игрок рядом с дверью
+    private bool canInteract = false; // игрок в зоне
 
     void Update()
     {
-        if (!hasOpened && canInteract && Input.GetKeyDown(interactKey))
+        if (canInteract && Input.GetKeyDown(interactKey))
         {
-            hasOpened = true;
-            animator.SetTrigger(triggerName);
+            animator.SetBool(boolName, true); // открыть дверь
         }
     }
 
-    // Зона взаимодействия
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -28,6 +25,9 @@ public class DoorOpener : MonoBehaviour
     void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
+        {
             canInteract = false;
+            animator.SetBool(boolName, false); // закрыть дверь
+        }
     }
 }
