@@ -25,3 +25,8 @@ UserSettings/
 
 # Unity Package Manager cache
 Packages/com.unity.*.tgz
+
+**/LightingData.asset
+**/LightingData.asset.meta
+**/GI/**
+**/Lightmaps/**
