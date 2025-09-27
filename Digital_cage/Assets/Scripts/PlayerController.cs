@@ -94,7 +94,8 @@ public class PlayerController : MonoBehaviour
         Vector3 move = (transform.right * horizontal + transform.forward * vertical).normalized;
         controller.Move(move * currentSpeed * Time.deltaTime);
 
-        if (Input.GetKeyDown(jumpKey) && isGrounded)
+        // Блокируем прыжок во время диалога
+        if (Input.GetKeyDown(jumpKey) && isGrounded && !DialogueManager.Instance.dialogueActive)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
@@ -123,4 +124,8 @@ public class PlayerController : MonoBehaviour
             }
         }
     }
-} 
+}
+
+
+
+
