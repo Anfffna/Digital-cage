@@ -1,100 +1,74 @@
 using UnityEngine;
 using System.Collections;
 
-public class DoorOpener : MonoBehaviour
+public class DoorOpener : MonoBehaviour, IInteractable
 {
     [Header("Door Settings")]
-    [SerializeField] private Animator animator;
-    [SerializeField] private KeyCode interactKey = KeyCode.E;
-    [SerializeField] private string boolName = "isOpen";
+    public Animator animator;
+    public string boolName = "isOpen";
+    public float closeDelay = 2f;
 
-    [Header("UI Settings")]
-    [SerializeField] private CanvasGroup pressToE; // CanvasGroup для плавного фейда
-    [SerializeField] private float fadeDuration = 0.5f; // скорость появления/исчезновения
+    [Header("Player Blocker Settings")]
+    public Collider playerBlocker;      // Невидимая стена
+    public Collider vnuTrigger;         // Внутренний триггер, когда игрок достигнет его, блокер станет настоящей стеной
+    private bool playerEntered = false; // Игрок вошёл в область двери
+    private bool playerReachedVnu = false; // Игрок дошёл до внутреннего триггера
 
-    [Header("Close Settings")]
-    [SerializeField] private float closeDelay = 2f; // задержка перед закрытием двери
-
-    private bool canInteract = false;
-    private Coroutine fadeCoroutine;
+    private bool isOpen = false;
 
     void Start()
     {
-        if (pressToE != null)
-        {
-            pressToE.alpha = 0; // изначально невидимо
-            pressToE.gameObject.SetActive(false);
-        }
+        if (playerBlocker != null)
+            playerBlocker.isTrigger = true; // Изначально пропускаем игрока
     }
 
     void Update()
     {
-        if (canInteract && Input.GetKeyDown(interactKey))
+        if (!playerEntered || playerReachedVnu || vnuTrigger == null || playerBlocker == null) return;
+
+        // Проверяем, достиг ли игрок внутреннего триггера
+        if (vnuTrigger.bounds.Contains(GameObject.FindWithTag("Player").transform.position))
         {
-            animator.SetBool(boolName, true); // открыть дверь
-            StartCoroutine(CloseDoorWithDelay()); // запускаем закрытие с задержкой
-            FadeOut(); // плавно скрываем надпись
+            playerReachedVnu = true;
+            playerBlocker.isTrigger = false; // Делаем блокер настоящей стеной
         }
     }
 
-    void OnTriggerEnter(Collider other)
+    public void Interact()
     {
-        if (other.CompareTag("Player"))
-        {
-            canInteract = true;
-            FadeIn();
-        }
+        isOpen = !isOpen;
+        if (animator != null)
+            animator.SetBool(boolName, isOpen);
+
+        if (isOpen)
+            StartCoroutine(CloseDoorWithDelay());
     }
 
-    void OnTriggerExit(Collider other)
+    public string GetInteractionText()
     {
-        if (other.CompareTag("Player"))
-        {
-            canInteract = false;
-            FadeOut();
-        }
+        return ""; // Возвращаем пустую строку — чтобы система не показывала текст
     }
 
     IEnumerator CloseDoorWithDelay()
     {
-        yield return new WaitForSeconds(closeDelay); // ждём 2 секунды
-        animator.SetBool(boolName, false); // закрываем дверь
+        yield return new WaitForSeconds(closeDelay);
+        isOpen = false;
+        if (animator != null)
+            animator.SetBool(boolName, isOpen);
     }
 
-    void FadeIn()
+    private void OnTriggerEnter(Collider other)
     {
-        if (pressToE != null)
-        {
-            pressToE.gameObject.SetActive(true);
-            if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
-            fadeCoroutine = StartCoroutine(FadeCanvasGroup(pressToE, pressToE.alpha, 1, fadeDuration));
-        }
-    }
-
-    void FadeOut()
-    {
-        if (pressToE != null)
-        {
-            if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
-            fadeCoroutine = StartCoroutine(FadeCanvasGroup(pressToE, pressToE.alpha, 0, fadeDuration, () =>
-            {
-                pressToE.gameObject.SetActive(false);
-            }));
-        }
-    }
-
-    IEnumerator FadeCanvasGroup(CanvasGroup canvasGroup, float start, float end, float duration, System.Action onComplete = null)
-    {
-        float time = 0f;
-        while (time < duration)
-        {
-            canvasGroup.alpha = Mathf.Lerp(start, end, time / duration);
-            time += Time.deltaTime;
-            yield return null;
-        }
-        canvasGroup.alpha = end;
-        onComplete?.Invoke();
+        if (!playerEntered && other.CompareTag("Player"))
+            playerEntered = true;
     }
 }
+
+
+
+
+
+
+
 
 

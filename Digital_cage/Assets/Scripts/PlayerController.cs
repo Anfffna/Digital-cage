@@ -32,13 +32,24 @@ public class PlayerController : MonoBehaviour
     private float xRotation = 0f;
     private float nextFootstepTime;
 
+    [HideInInspector]
+    public bool restrictHorizontalLook = false; // ограничение Y при сидении
+    public float minSitY = -106f;
+    public float maxSitY = 74f;
+    public bool restrictVerticalLook = false; // ограничение X при сидении
+    public float minSitX = -5f;  // минимальный угол X при сидении
+    public float maxSitX = 15f;  // максимальный угол X при сидении
+    public bool canMove = true; // флаг, блокирующий движение, но камера остаётся активной
+    public bool lockVerticalLook = false; // если true — нельзя крутить камеру по X
     void Start()
     {
         controller = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
 
         if (playerCamera == null)
+        {
             playerCamera = GetComponentInChildren<Camera>().transform;
+        }
 
         if (footstepAudioSource != null)
         {
@@ -54,37 +65,69 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         HandleGravityAndGrounded();
-        HandleMouseLook();
-        HandleMovement();
+        HandleMouseLook();   // Камера работает всегда
+        HandleMovement();    // Движение может быть заблокировано
         HandleFootsteps();
     }
 
     void HandleGravityAndGrounded()
     {
+        if (!canMove)  // если сидим, гравитация не нужна
+        {
+            velocity = Vector3.zero;
+            return;
+        }
+
         isGrounded = controller.isGrounded;
 
         if (isGrounded && velocity.y < 0)
         {
-            velocity.y = -2f;
+            velocity.y = -1.8f;
         }
 
         velocity.y += gravity * Time.deltaTime;
     }
+
 
     void HandleMouseLook()
     {
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        // вертикаль
+        if (restrictVerticalLook)
+            xRotation = Mathf.Clamp(xRotation - mouseY, minSitX, maxSitX);
+        else
+            xRotation = Mathf.Clamp(xRotation - mouseY, -90f, 90f);
+
+        // горизонталь
+        float yRotation = mouseX;
+        if (restrictHorizontalLook)
+        {
+            float currentY = transform.eulerAngles.y;
+            float targetY = currentY + yRotation;
+
+            // преобразуем в -180..180 для корректного ограничения
+            if (targetY > 180f) targetY -= 360f;
+
+            targetY = Mathf.Clamp(targetY, minSitY, maxSitY);
+            transform.rotation = Quaternion.Euler(transform.eulerAngles.x, targetY, transform.eulerAngles.z);
+        }
+        else
+        {
+            transform.Rotate(Vector3.up * yRotation);
+        }
 
         playerCamera.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
     }
+
+
+
 
     void HandleMovement()
     {
+        if (!canMove) return; // если игрок сидит, движение блокируется, камера работает
+
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
 
@@ -94,8 +137,7 @@ public class PlayerController : MonoBehaviour
         Vector3 move = (transform.right * horizontal + transform.forward * vertical).normalized;
         controller.Move(move * currentSpeed * Time.deltaTime);
 
-        // Блокируем прыжок во время диалога
-        if (Input.GetKeyDown(jumpKey) && isGrounded && !DialogueManager.Instance.dialogueActive)
+        if (Input.GetKeyDown(jumpKey) && isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
@@ -105,7 +147,15 @@ public class PlayerController : MonoBehaviour
 
     void HandleFootsteps()
     {
-        if (controller.velocity.magnitude > 0.2f && isGrounded)
+        if (!canMove)
+        {
+            if (footstepAudioSource.isPlaying) footstepAudioSource.Stop();
+            return;
+        }
+
+        bool isMoving = (Mathf.Abs(Input.GetAxis("Horizontal")) > 0.1f || Mathf.Abs(Input.GetAxis("Vertical")) > 0.1f) && isGrounded;
+
+        if (isMoving)
         {
             bool isRunning = Input.GetKey(KeyCode.LeftShift);
             AudioClip[] currentSounds = isRunning ? runFootstepSounds : walkFootstepSounds;
@@ -121,11 +171,53 @@ public class PlayerController : MonoBehaviour
                 footstepAudioSource.Play();
 
                 nextFootstepTime = Time.time + currentDelay;
+
+                Debug.Log("Step played: " + selectedClip.name); // проверка
             }
         }
+        else
+        {
+            if (footstepAudioSource.isPlaying)
+                footstepAudioSource.Stop();
+        }
     }
+
+
+    // ДОБАВЛЕННЫЕ МЕТОДЫ ДЛЯ ВЗАИМОДЕЙСТВИЯ СО СТУЛОМ
+    public void OnSitDown()
+{
+    canMove = false;
+    velocity = Vector3.zero;
+
+    if (footstepAudioSource != null && footstepAudioSource.isPlaying)
+    {
+        footstepAudioSource.Stop();
+    }
+
+    Debug.Log("Игрок сел на стул - движение заблокировано");
+}
+
+    public void OnStandUp()
+    {
+        canMove = true;
+        velocity = Vector3.zero; // <---- сбросить накопленную скорость, чтобы не подлетать
+        Debug.Log("Игрок встал со стула - движение разблокировано");
+    }
+
+    /// <summary>
+    /// Жёстко сбрасывает только вертикальную скорость,
+    /// чтобы при вставании не было подлётов или рывков.
+    /// </summary>
+    public void ResetVerticalVelocity()
+{
+    velocity.y = -2f; // значение как при grounded в Unity
 }
 
 
-
-
+    // ======= ПУБЛИЧНОЕ СВОЙСТВО ДЛЯ УПРАВЛЕНИЯ ВЕРТИКАЛЬНЫМ УГЛОМ КАМЕРЫ =======
+    public float CameraXRotation
+    {
+        get { return xRotation; }
+        set { xRotation = value; }
+    }
+}
