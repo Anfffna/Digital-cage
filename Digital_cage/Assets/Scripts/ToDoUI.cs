@@ -43,17 +43,32 @@ public class ToDoUI : MonoBehaviour
             return;
         }
 
-        // Зачёркиваем текущий пункт
-        items[index].fontStyle |= FontStyles.Strikethrough;
+        // === КОМБИНИРОВАННЫЙ ВАРИАНТ: FontStyles + цвет ===
+        TextMeshProUGUI item = items[index];
+
+        // Проверяем, не выполнена ли уже эта задача
+        if ((item.fontStyle & FontStyles.Strikethrough) == 0)
+        {
+            // Сохраняем оригинальный текст
+            string originalText = item.text;
+
+            // 1. Зачеркивание через FontStyles (для совместимости с проверкой)
+            item.fontStyle |= FontStyles.Strikethrough;
+
+            // 2. Серый цвет для красоты
+            item.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+
+            Debug.Log($"ToDoUI: Пункт {index} выполнен - '{originalText}'");
+        }
 
         // Разрешаем следующий пункт
         currentTaskIndex++;
 
-        // Проверяем, все ли пункты выполнены
+        // Проверяем, все ли пункты выполнены (старая проверка работает)
         bool allDone = true;
-        foreach (var item in items)
+        foreach (var itm in items)
         {
-            if ((item.fontStyle & FontStyles.Strikethrough) == 0)
+            if ((itm.fontStyle & FontStyles.Strikethrough) == 0)
             {
                 allDone = false;
                 break;

@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
+
 
 public class ManagerDialogue2 : MonoBehaviour
 {
-    public static ManagerDialogue2 Instance;
-
     [Header("UI References")]
     public GameObject dialoguePanel;
     public TextMeshProUGUI dialogueText;
@@ -14,21 +14,29 @@ public class ManagerDialogue2 : MonoBehaviour
     [Header("Typing Settings")]
     public float typingSpeed = 0.05f;
 
+    [Header("Todo Settings")]
+    public TodoUIManager todoManager; // Ссылка на менеджер туду
+    public int showTodoAfterLine = 5; // После какой строки показать туду (5 = после 5-й реплики)
+
+    [Header("Dialogue Events")]
+    public System.Action<int> OnDialogueIndexReached; // Событие при достижении индекса
+
     private Queue<string> lines;
     private Coroutine typingCoroutine;
     private string currentLine;
     private bool isTyping = false;
     private System.Action onDialogueEndCallback;
+    private int currentLineIndex = 0; // Счетчик текущей строки
+
 
     void Awake()
     {
-        if (Instance == null)
-            Instance = this;
-        else
-            Destroy(gameObject);
-
         lines = new Queue<string>();
-        dialoguePanel.SetActive(false);
+
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(false);
+        else
+            Debug.LogError("ManagerDialogue2: dialoguePanel не назначен в инспекторе!");
     }
 
     /// <summary>
@@ -36,11 +44,26 @@ public class ManagerDialogue2 : MonoBehaviour
     /// </summary>
     public void StartDialogue(List<string> dialogueLines, System.Action onEndCallback = null)
     {
+        Debug.Log($"ManagerDialogue2: StartDialogue вызван, строк: {dialogueLines?.Count}");
+
+        if (lines == null)
+        {
+            Debug.LogError("ManagerDialogue2: lines is NULL! Инициализирую экстренно...");
+            lines = new Queue<string>();
+        }
+
+        // Сброс счетчика строк
+        currentLineIndex = 0;
+
         lines.Clear();
         foreach (string line in dialogueLines)
             lines.Enqueue(line);
 
-        dialoguePanel.SetActive(true);
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(true);
+        else
+            Debug.LogError("ManagerDialogue2: dialoguePanel is NULL!");
+
         onDialogueEndCallback = onEndCallback;
 
         DisplayNextLine();
@@ -52,10 +75,19 @@ public class ManagerDialogue2 : MonoBehaviour
         {
             if (isTyping)
             {
-                // Пропуск анимации печати
+                // Прерываем корутину печати
                 StopCoroutine(typingCoroutine);
                 dialogueText.text = currentLine;
                 isTyping = false;
+
+                // === FIX: принудительная перестройка Layout'а ===
+                dialogueText.ForceMeshUpdate();
+                Canvas.ForceUpdateCanvases();
+
+                LayoutRebuilder.ForceRebuildLayoutImmediate(dialogueText.rectTransform);
+                LayoutRebuilder.ForceRebuildLayoutImmediate(dialoguePanel.GetComponent<RectTransform>());
+
+                StartCoroutine(ForceLayoutNextFrame());
             }
             else
             {
@@ -69,6 +101,12 @@ public class ManagerDialogue2 : MonoBehaviour
     /// </summary>
     public void DisplayNextLine()
     {
+        if (lines == null)
+        {
+            Debug.LogError("ManagerDialogue2: lines is NULL in DisplayNextLine!");
+            return;
+        }
+
         if (lines.Count == 0)
         {
             EndDialogue();
@@ -76,6 +114,12 @@ public class ManagerDialogue2 : MonoBehaviour
         }
 
         currentLine = lines.Dequeue();
+        currentLineIndex++;
+
+        OnDialogueIndexReached?.Invoke(currentLineIndex);
+
+        // Проверяем, нужно ли показать Todo после текущей строки
+        CheckForTodoTrigger();
 
         if (typingCoroutine != null)
             StopCoroutine(typingCoroutine);
@@ -84,17 +128,61 @@ public class ManagerDialogue2 : MonoBehaviour
     }
 
     /// <summary>
-    /// Корутина плавной печати текста
+    /// Проверка триггера для показа Todo списка
+    /// </summary>
+    private void CheckForTodoTrigger()
+    {
+        // Показываем Todo после того, как отобразилась строка с индексом showTodoAfterLine
+        // currentLineIndex увеличивается ДО отображения строки, поэтому проверяем на showTodoAfterLine
+        if (currentLineIndex == showTodoAfterLine + 1 && todoManager != null)
+        {
+            Debug.Log($"ManagerDialogue2: Показываем Todo после строки {showTodoAfterLine}");
+            todoManager.ShowTodoList();
+        }
+    }
+
+    /// <summary>
+    /// Корутина плавной печати текста с поддержкой Rich Text
     /// </summary>
     IEnumerator TypeLine(string line)
     {
         dialogueText.text = "";
+        dialogueText.richText = true;
         isTyping = true;
 
-        foreach (char letter in line.ToCharArray())
+        int i = 0;
+        bool insideTag = false;
+        string currentTag = "";
+
+        while (i < line.Length)
         {
-            dialogueText.text += letter;
-            yield return new WaitForSeconds(typingSpeed);
+            char c = line[i];
+
+            // Обработка тегов
+            if (c == '<')
+            {
+                insideTag = true;
+                currentTag = "<";
+            }
+            else if (insideTag)
+            {
+                currentTag += c;
+                if (c == '>')
+                {
+                    // Добавляем завершенный тег сразу
+                    dialogueText.text += currentTag;
+                    insideTag = false;
+                    currentTag = "";
+                }
+            }
+            else
+            {
+                // Обычный текст - печатаем с задержкой
+                dialogueText.text += c;
+                yield return new WaitForSeconds(typingSpeed);
+            }
+
+            i++;
         }
 
         isTyping = false;
@@ -105,7 +193,9 @@ public class ManagerDialogue2 : MonoBehaviour
     /// </summary>
     void EndDialogue()
     {
-        dialoguePanel.SetActive(false);
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(false);
+
         onDialogueEndCallback?.Invoke();
         onDialogueEndCallback = null;
     }
@@ -118,8 +208,21 @@ public class ManagerDialogue2 : MonoBehaviour
         if (typingCoroutine != null)
             StopCoroutine(typingCoroutine);
 
-        lines.Clear();
-        dialoguePanel.SetActive(false);
+        if (lines != null)
+            lines.Clear();
+
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(false);
+
         onDialogueEndCallback = null;
+    }
+
+    private IEnumerator ForceLayoutNextFrame()
+    {
+        yield return null; // дождаться конца текущего кадра
+        dialogueText.ForceMeshUpdate();
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(dialogueText.rectTransform);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(dialoguePanel.GetComponent<RectTransform>());
     }
 }

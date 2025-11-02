@@ -56,6 +56,27 @@ public class PhotoCapturePoint : MonoBehaviour, IInteractable
         taken = true;
         isUsed = true;
 
+        // === ВРЕМЕННО СКРЫВАЕМ TODO ПАНЕЛЬ НА ВРЕМЯ ФОТО ===
+        CanvasGroup todoPanelGroup = toDoUI?.panel;
+        float originalTodoAlpha = 1f;
+        bool wasTodoVisible = false;
+
+        if (todoPanelGroup != null && todoPanelGroup.alpha > 0)
+        {
+            wasTodoVisible = true;
+            originalTodoAlpha = todoPanelGroup.alpha;
+
+            // Быстро скрываем плашку
+            float tHide = 0f;
+            while (tHide < 0.2f)
+            {
+                tHide += Time.deltaTime;
+                todoPanelGroup.alpha = Mathf.Lerp(originalTodoAlpha, 0f, tHide / 0.2f);
+                yield return null;
+            }
+            todoPanelGroup.alpha = 0f;
+        }
+
         // === Временно скрываем диалог ===
         if (DialogueManager.Instance != null && DialogueManager.Instance.dialoguePanel.activeSelf)
             DialogueManager.Instance.dialoguePanel.SetActive(false);
@@ -158,6 +179,20 @@ public class PhotoCapturePoint : MonoBehaviour, IInteractable
             }
 
             cameraUIScreen.SetActive(false);
+        }
+
+        // === ВОССТАНАВЛИВАЕМ TODO ПАНЕЛЬ ПОСЛЕ ФОТО ===
+        if (wasTodoVisible && todoPanelGroup != null)
+        {
+            // Плавно возвращаем плашку
+            float tShow = 0f;
+            while (tShow < 0.3f)
+            {
+                tShow += Time.deltaTime;
+                todoPanelGroup.alpha = Mathf.Lerp(0f, originalTodoAlpha, tShow / 0.3f);
+                yield return null;
+            }
+            todoPanelGroup.alpha = originalTodoAlpha;
         }
 
         // === Возвращаем диалог ===

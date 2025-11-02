@@ -138,6 +138,10 @@ public class InteractionController : MonoBehaviour
             // Белый курсор для: телефона, терминала, и PhotoCapturePoint с todoIndex 1 или 2
             if (currentInteractable is TakePhone ||
                 currentInteractable is DoorOpener ||
+                currentInteractable is PhotoHall1 ||
+                currentInteractable is PhotoHall2 ||
+                currentInteractable is PhotoHall3 ||
+                currentInteractable is CorridorDoor ||
                 currentInteractable is DialogueTriggerTerminal ||
                 (currentInteractable is PhotoCapturePoint capturePoint &&
                  (capturePoint.todoIndex == 1 || capturePoint.todoIndex == 2)))
@@ -157,6 +161,10 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is ChairSit) return;
         if (currentInteractable is DialogueTriggerTerminal) return;
         if (currentInteractable is PhotoCapturePoint) return; // плашку не показываем
+        if (currentInteractable is CorridorDoor) return;
+        if (currentInteractable is PhotoHall1) return;
+        if (currentInteractable is PhotoHall2) return;
+        if (currentInteractable is PhotoHall3) return;
 
         // === Обычное поведение для остальных объектов ===
         if (interactionUI != null)
