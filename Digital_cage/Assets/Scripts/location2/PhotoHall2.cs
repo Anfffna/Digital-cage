@@ -24,7 +24,7 @@ public class PhotoHall2 : MonoBehaviour, IInteractable
 
     private bool isInteractable = false;
     private bool dialogueTriggered = false;
-    private bool hasBeenUsed = false;
+    public bool hasBeenUsed = false;
     private Coroutine photoLagCoroutine;
 
     void Start()

@@ -18,7 +18,7 @@ public class PhotoHall1 : MonoBehaviour, IInteractable
 
     private bool isInteractable = false;
     private bool dialogueTriggered = false;
-    private bool hasBeenUsed = false;
+    public bool hasBeenUsed = false;
 
     void Start()
     {

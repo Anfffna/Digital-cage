@@ -3,14 +3,20 @@ using System.Collections.Generic;
 using System.Collections;
 using TMPro;
 
-public class PhotoHall3 : MonoBehaviour, IInteractable
+public class Stereo : MonoBehaviour, IInteractable
 {
     [Header("Dialogue Settings")]
     public ManagerDialogue2 dialogueManager;
 
-    [Header("Photo Hall Dialogue")]
+    [Header("Stereo Dialogue")]
     [TextArea(2, 5)]
-    public List<string> photoHallDialogueTexts;
+    public List<string> stereoDialogueTexts;
+
+    [Header("Audio Settings")]
+    public AudioSource audioSource;
+    public AudioClip firstAudioClip;
+    public AudioClip secondAudioClip;
+    public float delayBetweenAudios = 0.5f;
 
     [Header("Todo Settings")]
     public TodoUIManager todoManager;
@@ -22,11 +28,29 @@ public class PhotoHall3 : MonoBehaviour, IInteractable
 
     void Start()
     {
+        // Устанавливаем слой Interactable
         gameObject.layer = LayerMask.NameToLayer("Interactable");
+
+        // Изначально делаем объект неинтерактивным
         SetInteractable(false);
+
+        // Автоматически находим AudioSource если не назначен
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+            }
+        }
+
+        // Начинаем проверку выполнения задачи в туду
         StartCoroutine(CheckTodoCompletion());
     }
 
+    /// <summary>
+    /// Проверяет выполнение задачи в туду менеджере
+    /// </summary>
     private IEnumerator CheckTodoCompletion()
     {
         while (todoManager == null)
@@ -42,7 +66,7 @@ public class PhotoHall3 : MonoBehaviour, IInteractable
                 if (IsTodoItemCompleted(requiredTodoIndex))
                 {
                     SetInteractable(true);
-                    Debug.Log($"PhotoHall3: Объект теперь интерактивен! Задача {requiredTodoIndex} выполнена.");
+                    Debug.Log($"Stereo: Объект теперь интерактивен! Задача {requiredTodoIndex} выполнена.");
                     break;
                 }
             }
@@ -74,35 +98,69 @@ public class PhotoHall3 : MonoBehaviour, IInteractable
         SetInteractable(false);
         hasBeenUsed = true;
 
-        if (dialogueManager != null)
-        {
-            dialogueManager.OnDialogueIndexReached += OnDialogueLineChanged;
-        }
+        // Останавливаем фоновую музыку перед началом аудио
+        StopBackgroundMusic();
 
-        if (dialogueManager != null && photoHallDialogueTexts != null && photoHallDialogueTexts.Count > 0)
+        // Запускаем аудио и диалог
+        if (dialogueManager != null && stereoDialogueTexts != null && stereoDialogueTexts.Count > 0)
         {
             dialogueTriggered = true;
-            dialogueManager.StartDialogue(photoHallDialogueTexts, OnDialogueEnd);
+
+            // Запускаем воспроизведение аудио
+            StartCoroutine(PlayAudioSequence());
+
+            // Запускаем диалог
+            dialogueManager.StartDialogue(stereoDialogueTexts, OnDialogueEnd);
         }
     }
 
-    // Оставил метод на случай если нужно будет добавлять логику на определенных репликах
-    private void OnDialogueLineChanged(int currentLineIndex)
+    /// <summary>
+    /// Останавливает фоновую музыку
+    /// </summary>
+    private void StopBackgroundMusic()
     {
-        // Здесь можно добавить другую логику на определенных репликах
-        // Например, звуковые эффекты или события
+        MusicController musicController = FindObjectOfType<MusicController>();
+        if (musicController != null)
+        {
+            musicController.StopMusic();
+            Debug.Log("?? Фоновая музыка остановлена");
+        }
+    }
+
+    /// <summary>
+    /// Воспроизводит два аудиофайла по порядку
+    /// </summary>
+    private IEnumerator PlayAudioSequence()
+    {
+        if (audioSource == null) yield break;
+
+        // Первое аудио
+        if (firstAudioClip != null)
+        {
+            audioSource.clip = firstAudioClip;
+            audioSource.Play();
+            Debug.Log("?? Воспроизводится первое аудио");
+
+            // Ждем окончания первого аудио
+            yield return new WaitForSeconds(firstAudioClip.length);
+
+            // Небольшая пауза между аудио
+            yield return new WaitForSeconds(delayBetweenAudios);
+        }
+
+        // Второе аудио
+        if (secondAudioClip != null)
+        {
+            audioSource.clip = secondAudioClip;
+            audioSource.Play();
+            Debug.Log("?? Воспроизводится второе аудио");
+        }
     }
 
     private void OnDialogueEnd()
     {
         dialogueTriggered = false;
-
-        if (dialogueManager != null)
-        {
-            dialogueManager.OnDialogueIndexReached -= OnDialogueLineChanged;
-        }
-
-        Debug.Log("PhotoHall3: Диалог завершен");
+        Debug.Log("Stereo: Диалог завершен");
         SetInteractable(false);
     }
 
@@ -123,11 +181,6 @@ public class PhotoHall3 : MonoBehaviour, IInteractable
     void OnDestroy()
     {
         StopAllCoroutines();
-
-        if (dialogueManager != null)
-        {
-            dialogueManager.OnDialogueIndexReached -= OnDialogueLineChanged;
-        }
     }
 
     void OnDrawGizmos()

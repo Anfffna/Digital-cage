@@ -6,25 +6,91 @@ public class BathroomSilhouette : MonoBehaviour
 {
     [Header("Основные настройки")]
     [SerializeField] private GameObject silhouette;
-    [SerializeField] private float hideDelay = 0.5f; // Задержка перед исчезновением
+    [SerializeField] private float hideDelay = 0.5f;
 
     [Header("Диалог")]
     [SerializeField] private ManagerDialogue2 dialogueManager;
-    [SerializeField] private List<string> dialogueLines; // Список строк диалога
+    [SerializeField] private List<string> dialogueLines;
+
+    [Header("Другие компоненты")]
+    [SerializeField] private Collider bathroomTrigger;
+    [SerializeField] private Collider limitBathroom;
+    [SerializeField] private TodoUIManager todoManager;
 
     private bool hasTriggered = false;
     private Animator silhouetteAnimator;
     private Renderer silhouetteRenderer;
+    private Transform player;
+    private Camera playerCamera;
+    private bool waitingForTodo = false;
+
+    void Awake()
+    {
+        // Выключаем только компоненты, а не весь GameObject
+        SetSilhouetteVisible(false);
+        SetCollidersEnabled(false);
+    }
 
     void Start()
     {
+        player = GameObject.FindGameObjectWithTag("Player").transform;
+        playerCamera = Camera.main;
+
         silhouetteAnimator = silhouette.GetComponent<Animator>();
         silhouetteRenderer = silhouette.GetComponent<Renderer>();
 
-        // Силуэт изначально ВИДИМ
+        // Дублируем выключение
+        SetSilhouetteVisible(false);
+        SetCollidersEnabled(false);
+
+        // Запускаем проверку туду в Update вместо корутины
+        waitingForTodo = true;
+    }
+
+    void Update()
+    {
+        if (waitingForTodo && todoManager != null && todoManager.todoPanel != null && todoManager.todoPanel.alpha >= 0.99f)
+        {
+            waitingForTodo = false;
+            StartCoroutine(ActivateSystem());
+        }
+    }
+
+    IEnumerator ActivateSystem()
+    {
+        // Включаем коллайдеры
+        SetCollidersEnabled(true);
+
+        // Ждем пока игрок НЕ смотрит на место силуэта
+        yield return new WaitUntil(() => !IsPlayerLookingAtSilhouette());
+
+        // Показываем силуэт
+        ShowSilhouette();
+    }
+
+    void SetCollidersEnabled(bool enabled)
+    {
+        if (bathroomTrigger != null)
+            bathroomTrigger.enabled = enabled;
+
+        if (limitBathroom != null)
+            limitBathroom.enabled = enabled;
+    }
+
+    bool IsPlayerLookingAtSilhouette()
+    {
+        if (playerCamera == null) return false;
+
+        Vector3 directionToSilhouette = (transform.position - playerCamera.transform.position).normalized;
+        float dot = Vector3.Dot(playerCamera.transform.forward, directionToSilhouette);
+
+        return dot > 0.87f;
+    }
+
+    void ShowSilhouette()
+    {
         SetSilhouetteVisible(true);
 
-        // Включаем анимацию покоя
         if (silhouetteAnimator != null)
         {
             silhouetteAnimator.Play("Idle", -1, 0f);
@@ -33,7 +99,6 @@ public class BathroomSilhouette : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        // Если игрок зашел в зону и еще не срабатывало
         if (other.CompareTag("Player") && !hasTriggered)
         {
             StartCoroutine(HideSilhouette());
@@ -44,19 +109,16 @@ public class BathroomSilhouette : MonoBehaviour
     {
         hasTriggered = true;
 
-        Debug.Log("Игрок вошел в зону - скрываем силуэт");
-
-        // Запускаем диалог если есть DialogueManager и строки
+        // Запускаем диалог если есть
         if (dialogueManager != null && dialogueLines != null && dialogueLines.Count > 0)
         {
             dialogueManager.StartDialogue(dialogueLines);
-            Debug.Log("Запущен диалог");
         }
 
-        // Ждем небольшую задержку перед исчезновением (параллельно с диалогом)
+        // Ждем задержку перед исчезновением
         yield return new WaitForSeconds(hideDelay);
 
-        // Запускаем анимацию исчезновения (параллельно с диалогом)
+        // Запускаем анимацию исчезновения
         if (silhouetteAnimator != null)
         {
             silhouetteAnimator.Play("Disappear", -1, 0f);
@@ -64,13 +126,11 @@ public class BathroomSilhouette : MonoBehaviour
         }
         else
         {
-            // Если нет аниматора, просто ждем
             yield return new WaitForSeconds(1f);
         }
 
-        // Навсегда скрываем силуэт (диалог может еще продолжаться)
+        // Навсегда скрываем силуэт
         SetSilhouetteVisible(false);
-        Debug.Log("Силуэт скрыт навсегда");
     }
 
     void SetSilhouetteVisible(bool visible)

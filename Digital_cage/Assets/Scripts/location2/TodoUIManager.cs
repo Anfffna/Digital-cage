@@ -6,38 +6,107 @@ using TMPro;
 public class TodoUIManager : MonoBehaviour
 {
     [Header("Todo UI Settings")]
-    public CanvasGroup todoPanel; // Перетащите вашу Todo панель сюда
+    public CanvasGroup todoPanel;
     public float fadeInDuration = 1.5f;
 
     [Header("Todo Items")]
-    public TextMeshProUGUI[] todoItems; // Перетащите текстовые элементы ваших 3 дел
+    public TextMeshProUGUI[] todoItems;
+
+    [Header("Task Completion Check")]
+    public Stereo stereo;
+    public PhotoHall1 photoHall1;
+    public PhotoHall2 photoHall2;
+    public PhotoHall3 photoHall3;
 
     private bool isShowing = false;
     private Coroutine fadeCoroutine;
     private int completedTasks = 0;
     private int totalTasks = 0;
+    private bool stereoCompleted = false;
+    private bool photoHall1Completed = false;
+    private bool photoHall2Completed = false;
+    private bool photoHall3Completed = false;
 
     void Start()
     {
-        // Гарантируем, что туду панель не видна при старте
         if (todoPanel != null)
         {
             todoPanel.alpha = 0f;
             todoPanel.gameObject.SetActive(false);
         }
 
-        // Определяем общее количество задач
         if (todoItems != null)
         {
             totalTasks = todoItems.Length;
         }
 
         Debug.Log($"TodoUIManager: Всего задач - {totalTasks}");
+
+        AutoFindObjects();
     }
 
-    /// <summary>
-    /// Плавно показывает Todo панель
-    /// </summary>
+    void Update()
+    {
+        CheckAllSpecialTasksCompleted();
+    }
+
+    private void AutoFindObjects()
+    {
+        if (stereo == null)
+            stereo = FindObjectOfType<Stereo>();
+
+        if (photoHall1 == null)
+            photoHall1 = FindObjectOfType<PhotoHall1>();
+
+        if (photoHall2 == null)
+            photoHall2 = FindObjectOfType<PhotoHall2>();
+
+        if (photoHall3 == null)
+            photoHall3 = FindObjectOfType<PhotoHall3>();
+    }
+
+    private void CheckAllSpecialTasksCompleted()
+    {
+        if (!stereoCompleted && stereo != null && stereo.hasBeenUsed)
+        {
+            stereoCompleted = true;
+            Debug.Log("? Stereo выполнен!");
+        }
+
+        if (!photoHall1Completed && photoHall1 != null && photoHall1.hasBeenUsed)
+        {
+            photoHall1Completed = true;
+            Debug.Log("? PhotoHall1 выполнен!");
+        }
+
+        if (!photoHall2Completed && photoHall2 != null && photoHall2.hasBeenUsed)
+        {
+            photoHall2Completed = true;
+            Debug.Log("? PhotoHall2 выполнен!");
+        }
+
+        if (!photoHall3Completed && photoHall3 != null && photoHall3.hasBeenUsed)
+        {
+            photoHall3Completed = true;
+            Debug.Log("? PhotoHall3 выполнен!");
+        }
+
+        if (stereoCompleted && photoHall1Completed && photoHall2Completed && photoHall3Completed)
+        {
+            if (!IsTodoItemCompleted(1))
+            {
+                CompleteTodoItem(1);
+                Debug.Log("?? Все 4 специальные задачи выполнены! Зачеркиваем индекс 1");
+            }
+        }
+    }
+
+    private bool IsTodoItemCompleted(int index)
+    {
+        if (todoItems == null || index < 0 || index >= todoItems.Length) return false;
+        return todoItems[index].text.StartsWith("<s>");
+    }
+
     public void ShowTodoList()
     {
         if (isShowing || todoPanel == null) return;
@@ -48,9 +117,6 @@ public class TodoUIManager : MonoBehaviour
         fadeCoroutine = StartCoroutine(FadeInTodo());
     }
 
-    /// <summary>
-    /// Плавно скрывает Todo панель
-    /// </summary>
     public void HideTodoList()
     {
         if (!isShowing || todoPanel == null) return;
@@ -75,7 +141,6 @@ public class TodoUIManager : MonoBehaviour
         }
 
         todoPanel.alpha = 1f;
-        Debug.Log("TodoUIManager: Todo list полностью показан");
     }
 
     private IEnumerator FadeOutTodo()
@@ -93,80 +158,100 @@ public class TodoUIManager : MonoBehaviour
         todoPanel.alpha = 0f;
         todoPanel.gameObject.SetActive(false);
         isShowing = false;
-
-        Debug.Log("TodoUIManager: Todo list скрыт");
     }
 
-    /// <summary>
-    /// Обновить текст конкретного todo item
-    /// </summary>
-    public void UpdateTodoItem(int index, string newText)
-    {
-        if (todoItems != null && index >= 0 && index < todoItems.Length && todoItems[index] != null)
-        {
-            todoItems[index].text = newText;
-        }
-    }
-
-    /// <summary>
-    /// Отметить todo item как выполненный (зачеркнуть текст)
-    /// </summary>
     public void CompleteTodoItem(int index)
     {
         if (todoItems != null && index >= 0 && index < todoItems.Length && todoItems[index] != null)
         {
             string currentText = todoItems[index].text;
 
-            // Проверяем, не выполнена ли уже эта задача
             if (!currentText.StartsWith("<s>"))
             {
-                // Запускаем эффект моргания
                 StartCoroutine(SimpleBlinkEffect(index, currentText));
             }
         }
     }
 
-    /// <summary>
-    /// Простой эффект моргания
-    /// </summary>
     private IEnumerator SimpleBlinkEffect(int index, string originalText)
     {
         if (todoPanel == null) yield break;
 
+        // Запоминаем исходную прозрачность панели (должна быть 1)
         float originalAlpha = todoPanel.alpha;
 
-        // Быстрое моргание: исчезновение-появление
+        // Первое моргание - исчезаем до 20%
         float timer = 0f;
-        while (timer < 0.15f)
+        while (timer < 0.1f)
         {
             timer += Time.deltaTime;
-            todoPanel.alpha = Mathf.Lerp(originalAlpha, 0.2f, timer / 0.15f);
+            todoPanel.alpha = Mathf.Lerp(originalAlpha, 0.2f, timer / 0.1f);
             yield return null;
         }
 
-        // Зачеркиваем задачу в середине эффекта
+        // Зачеркиваем текст в середине эффекта
         todoItems[index].text = $"<s>{originalText}</s>";
         todoItems[index].color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
-        completedTasks++;
 
-        // Возвращаем прозрачность
+        // ДОБАВЛЕНО: Правильно считаем выполненные задачи
+        completedTasks = CountCompletedTasks();
+        Debug.Log($"TodoUIManager: Задача {index} выполнена. Всего выполнено: {completedTasks}/{totalTasks}");
+
+        // Второе моргание - возвращаемся к 100%
         timer = 0f;
-        while (timer < 0.15f)
+        while (timer < 0.1f)
         {
             timer += Time.deltaTime;
-            todoPanel.alpha = Mathf.Lerp(0.2f, originalAlpha, timer / 0.15f);
+            todoPanel.alpha = Mathf.Lerp(0.2f, 1f, timer / 0.1f);
             yield return null;
         }
 
-        todoPanel.alpha = originalAlpha;
+        // Гарантируем что панель вернулась к полной прозрачности
+        todoPanel.alpha = 1f;
 
-        Debug.Log($"TodoUIManager: Задача {index} выполнена. Выполнено: {completedTasks}/{totalTasks}");
-        CheckAllTasksCompleted();
+        // ДОБАВЛЕНО: Проверяем все ли задачи выполнены и скрываем панель
+        HideAfterAllTasksCompleted();
     }
 
     /// <summary>
-    /// Проверяет, все ли задачи выполнены
+    /// ДОБАВЛЕНО: Правильно подсчитывает количество выполненных задач
     /// </summary>
+    private int CountCompletedTasks()
+    {
+        int count = 0;
+        if (todoItems != null)
+        {
+            foreach (TextMeshProUGUI item in todoItems)
+            {
+                if (item != null && item.text.StartsWith("<s>"))
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /// <summary>
+    /// Скрывает панель после задержки когда все задачи выполнены
+    /// </summary>
+    public void HideAfterAllTasksCompleted()
+    {
+        if (completedTasks >= totalTasks)
+        {
+            Debug.Log($"TodoUIManager: Все задачи выполнены ({completedTasks}/{totalTasks})! Скрываем панель...");
+            StartCoroutine(HideAfterDelay(1f));
+        }
+    }
+
+    private IEnumerator HideAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        HideTodoList();
+    }
+
+    // УДАЛИ или ЗАКОММЕНТИРУЙ эти методы чтобы панель не скрывалась:
+    /*
     private void CheckAllTasksCompleted()
     {
         if (completedTasks >= totalTasks)
@@ -176,47 +261,10 @@ public class TodoUIManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Скрывает панель после задержки (когда все задачи выполнены)
-    /// </summary>
     private IEnumerator HideAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
         HideTodoList();
     }
-
-    /// <summary>
-    /// Принудительно завершить все задачи и скрыть панель
-    /// </summary>
-    public void ForceCompleteAllTasks()
-    {
-        for (int i = 0; i < totalTasks; i++)
-        {
-            CompleteTodoItem(i);
-        }
-    }
-
-    /// <summary>
-    /// Проверить, все ли задачи выполнены
-    /// </summary>
-    public bool AreAllTasksCompleted()
-    {
-        return completedTasks >= totalTasks;
-    }
-
-    /// <summary>
-    /// Получить прогресс выполнения задач
-    /// </summary>
-    public int GetCompletedTasksCount()
-    {
-        return completedTasks;
-    }
-
-    /// <summary>
-    /// Получить общее количество задач
-    /// </summary>
-    public int GetTotalTasksCount()
-    {
-        return totalTasks;
-    }
+    */
 }

@@ -141,6 +141,8 @@ public class InteractionController : MonoBehaviour
                 currentInteractable is PhotoHall1 ||
                 currentInteractable is PhotoHall2 ||
                 currentInteractable is PhotoHall3 ||
+                currentInteractable is CerealBox ||
+                currentInteractable is Stereo ||
                 currentInteractable is CorridorDoor ||
                 currentInteractable is DialogueTriggerTerminal ||
                 (currentInteractable is PhotoCapturePoint capturePoint &&
@@ -165,6 +167,8 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is PhotoHall1) return;
         if (currentInteractable is PhotoHall2) return;
         if (currentInteractable is PhotoHall3) return;
+        if (currentInteractable is Stereo) return;
+        if (currentInteractable is CerealBox) return;
 
         // === Обычное поведение для остальных объектов ===
         if (interactionUI != null)
