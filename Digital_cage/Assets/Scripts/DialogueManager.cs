@@ -20,7 +20,6 @@ public class DialogueManager : MonoBehaviour
     public SignatureDrawerTexture signatureDrawer; // Поле подписи
     public int requireSignatureForLine = 5;       // Индекс линии, ждущей подписи
 
-
     [HideInInspector] public bool dialogueActive = false;
 
     private Queue<string> lines;                   // Очередь реплик
@@ -39,6 +38,9 @@ public class DialogueManager : MonoBehaviour
     private bool waitForSecretary = false;
 
     private ChairSit chairSit;
+
+    // НОВЫЙ ФЛАГ: разрешено ли пропускать реплики кликом мыши
+    private bool allowSkipping = true;
 
     void Awake()
     {
@@ -62,10 +64,12 @@ public class DialogueManager : MonoBehaviour
     /// <param name="dialogueLines">Список реплик</param>
     /// <param name="onLineFinished">Колбэк после каждой реплики</param>
     /// <param name="allowBlockAfterLine2">Разрешить блокировку после линии 2</param>
-    public void StartDialogue(List<string> dialogueLines, System.Action<int> onLineFinished = null, bool allowBlockAfterLine2 = true, bool allowAutoContinueForAll = false)
+    /// <param name="allowAutoContinueForAll">Разрешить авто-продолжение для всех реплик</param>
+    /// <param name="allowSkipping">Разрешить ли пропускать реплики кликом мыши</param>
+    public void StartDialogue(List<string> dialogueLines, System.Action<int> onLineFinished = null, bool allowBlockAfterLine2 = true, bool allowAutoContinueForAll = false, bool allowSkipping = true)
     {
         Debug.Log($"=== StartDialogue вызван ===");
-        Debug.Log($"Колбэк: {onLineFinished != null}, AllowAutoContinue: {allowAutoContinueForAll}");
+        Debug.Log($"Колбэк: {onLineFinished != null}, AllowAutoContinue: {allowAutoContinueForAll}, AllowSkipping: {allowSkipping}");
 
         // Очистка очереди
         lines.Clear();
@@ -80,13 +84,24 @@ public class DialogueManager : MonoBehaviour
         // Сбрасываем блокировку при новом диалоге
         blockMouseAfterLine2 = false;
         this.allowBlockAfterLine2 = allowBlockAfterLine2;
-        this.allowAutoContinueForAll = allowAutoContinueForAll; // ? НОВАЯ ПЕРЕМЕННАЯ
+        this.allowAutoContinueForAll = allowAutoContinueForAll;
+
+        // НОВЫЙ ПАРАМЕТР: сохраняем настройку скипа
+        this.allowSkipping = allowSkipping;
 
         DisplayNextLine();
     }
 
     void Update()
     {
+        if (PauseMenu.IsGamePaused) return;
+
+        // НОВАЯ ПРОВЕРКА: если скип запрещен - выходим из метода Update
+        if (!allowSkipping)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
             if (blockMouseAfterLine2)
@@ -124,7 +139,7 @@ public class DialogueManager : MonoBehaviour
     /// </summary>
     public void DisplayNextLine()
     {
-        Debug.Log($"DisplayNextLine: осталось строк {lines.Count}");
+        if (PauseMenu.IsGamePaused) return;
 
         if (waitForSecretary)
         {
@@ -192,6 +207,11 @@ public class DialogueManager : MonoBehaviour
 
         while (i < line.Length)
         {
+            if (PauseMenu.IsGamePaused)
+            {
+                yield return new WaitWhile(() => PauseMenu.IsGamePaused);
+            }
+
             char c = line[i];
 
             if (c == '<') insideTag = true;
@@ -225,6 +245,8 @@ public class DialogueManager : MonoBehaviour
     {
         yield return new WaitForSeconds(autoNextDelay);
 
+        if (PauseMenu.IsGamePaused) yield break;
+
         // Проверяем, что диалог все еще активен и не заблокирован
         if (dialogueActive && !blockMouseAfterLine2)
         {
@@ -247,6 +269,9 @@ public class DialogueManager : MonoBehaviour
         dialoguePanel.SetActive(false);
         dialogueActive = false;
         onLineFinishedCallback = null;
+
+        // НОВОЕ: сбрасываем флаг скипа при завершении диалога
+        allowSkipping = true;
     }
 
     /// <summary>
@@ -335,6 +360,11 @@ public class DialogueManager : MonoBehaviour
 
         while (i < line.Length)
         {
+            if (PauseMenu.IsGamePaused)
+            {
+                yield return new WaitWhile(() => PauseMenu.IsGamePaused);
+            }
+
             char c = line[i];
 
             if (c == '<') insideTag = true;

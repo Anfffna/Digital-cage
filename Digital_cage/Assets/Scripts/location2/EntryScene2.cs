@@ -12,10 +12,13 @@ public class EntryScene2 : MonoBehaviour
     public float blackScreenDuration = 1f;
     public float fadeOutDuration = 2f;
 
+    private Coroutine sceneSequenceCoroutine;
+    private Coroutine fadeCoroutine;
+
     void Start()
     {
         // Запускаем последовательность: черный экран + выключение курсора
-        StartCoroutine(SceneStartSequence());
+        sceneSequenceCoroutine = StartCoroutine(SceneStartSequence());
     }
 
     private IEnumerator SceneStartSequence()
@@ -53,7 +56,8 @@ public class EntryScene2 : MonoBehaviour
         // Шаг 4: Плавно убираем черный экран
         if (blackScreenImage != null)
         {
-            yield return StartCoroutine(FadeOutBlackScreen());
+            fadeCoroutine = StartCoroutine(FadeOutBlackScreen());
+            yield return fadeCoroutine;
         }
 
         Debug.Log("EntryScene2: Сцена инициализирована");
@@ -72,19 +76,39 @@ public class EntryScene2 : MonoBehaviour
 
     private IEnumerator FadeOutBlackScreen()
     {
+        if (blackScreenImage == null) yield break; // Защита от null
+
         float timer = 0f;
         Color startColor = blackScreenImage.color;
         Color endColor = new Color(0, 0, 0, 0);
 
         while (timer < fadeOutDuration)
         {
+            if (blackScreenImage == null) yield break; // Защита в цикле
+
             timer += Time.deltaTime;
             float progress = timer / fadeOutDuration;
             blackScreenImage.color = Color.Lerp(startColor, endColor, progress);
             yield return null;
         }
 
-        blackScreenImage.gameObject.SetActive(false);
-        Debug.Log("EntryScene2: Черный экран скрыт");
+        if (blackScreenImage != null) // Финальная защита
+        {
+            blackScreenImage.gameObject.SetActive(false);
+            Debug.Log("EntryScene2: Черный экран скрыт");
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Останавливаем все корутины при уничтожении объекта
+        if (sceneSequenceCoroutine != null)
+        {
+            StopCoroutine(sceneSequenceCoroutine);
+        }
+        if (fadeCoroutine != null)
+        {
+            StopCoroutine(fadeCoroutine);
+        }
     }
 }

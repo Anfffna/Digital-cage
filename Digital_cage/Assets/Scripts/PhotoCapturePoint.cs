@@ -56,6 +56,18 @@ public class PhotoCapturePoint : MonoBehaviour, IInteractable
         taken = true;
         isUsed = true;
 
+        // === Сохраняем состояние диалога ===
+        bool wasDialogueActive = false;
+        DialogueManager dialogueManager = DialogueManager.Instance;
+
+        if (dialogueManager != null && dialogueManager.dialoguePanel.activeSelf)
+        {
+            wasDialogueActive = true;
+            // Используем метод скрытия из DialogueManager вместо прямого отключения
+            dialogueManager.HideDialogue();
+            Debug.Log("Диалог временно скрыт для фото");
+        }
+
         // === ВРЕМЕННО СКРЫВАЕМ TODO ПАНЕЛЬ НА ВРЕМЯ ФОТО ===
         CanvasGroup todoPanelGroup = toDoUI?.panel;
         float originalTodoAlpha = 1f;
@@ -76,10 +88,6 @@ public class PhotoCapturePoint : MonoBehaviour, IInteractable
             }
             todoPanelGroup.alpha = 0f;
         }
-
-        // === Временно скрываем диалог ===
-        if (DialogueManager.Instance != null && DialogueManager.Instance.dialoguePanel.activeSelf)
-            DialogueManager.Instance.dialoguePanel.SetActive(false);
 
         // Включаем UI телефона
         if (cameraUIScreen != null)
@@ -195,10 +203,25 @@ public class PhotoCapturePoint : MonoBehaviour, IInteractable
             todoPanelGroup.alpha = originalTodoAlpha;
         }
 
-        // === Возвращаем диалог ===
+        // === ПРАВИЛЬНО возвращаем диалог ===
         yield return new WaitForSeconds(1.6f);
-        if (DialogueManager.Instance != null)
-            DialogueManager.Instance.dialoguePanel.SetActive(true);
+
+        if (wasDialogueActive && dialogueManager != null && dialogueManager.dialogueActive)
+        {
+            // Восстанавливаем панель диалога
+            dialogueManager.dialoguePanel.SetActive(true);
+            Debug.Log("Диалог восстановлен после фото");
+
+            // Дополнительная проверка - если диалог почему-то не активен, выводим предупреждение
+            if (!dialogueManager.dialogueActive)
+            {
+                Debug.LogWarning("Внимание: диалог неактивен после восстановления!");
+            }
+        }
+        else if (wasDialogueActive && dialogueManager != null)
+        {
+            Debug.LogWarning("Диалог был завершен во время фотосессии");
+        }
     }
 
     public void OnHoverEnter()

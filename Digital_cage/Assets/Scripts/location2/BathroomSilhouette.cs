@@ -51,8 +51,12 @@ public class BathroomSilhouette : MonoBehaviour
     {
         if (waitingForTodo && todoManager != null && todoManager.todoPanel != null && todoManager.todoPanel.alpha >= 0.99f)
         {
-            waitingForTodo = false;
-            StartCoroutine(ActivateSystem());
+            // Ждем пока нет активных диалогов
+            if (!IsAnyDialogueActive())
+            {
+                waitingForTodo = false;
+                StartCoroutine(ActivateSystem());
+            }
         }
     }
 
@@ -87,6 +91,16 @@ public class BathroomSilhouette : MonoBehaviour
         return dot > 0.87f;
     }
 
+    bool IsAnyDialogueActive()
+    {
+        // Проверяем активен ли диалог через dialoguePanel
+        if (dialogueManager != null && dialogueManager.dialoguePanel != null)
+        {
+            return dialogueManager.dialoguePanel.activeInHierarchy;
+        }
+        return false;
+    }
+
     void ShowSilhouette()
     {
         SetSilhouetteVisible(true);
@@ -99,7 +113,7 @@ public class BathroomSilhouette : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player") && !hasTriggered)
+        if (other.CompareTag("Player") && !hasTriggered && !IsAnyDialogueActive())
         {
             StartCoroutine(HideSilhouette());
         }

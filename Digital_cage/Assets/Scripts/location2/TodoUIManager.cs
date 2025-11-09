@@ -168,50 +168,59 @@ public class TodoUIManager : MonoBehaviour
 
             if (!currentText.StartsWith("<s>"))
             {
-                StartCoroutine(SimpleBlinkEffect(index, currentText));
+                // Просто зачеркиваем текст без эффектов
+                todoItems[index].text = $"<s>{currentText}</s>";
+                todoItems[index].color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+
+                // Обновляем счетчик
+                completedTasks = CountCompletedTasks();
+                Debug.Log($"TodoUIManager: Задача {index} выполнена. Всего выполнено: {completedTasks}/{totalTasks}");
+
+                // Проверяем все ли задачи выполнены
+                HideAfterAllTasksCompleted();
             }
         }
     }
 
-    private IEnumerator SimpleBlinkEffect(int index, string originalText)
-    {
-        if (todoPanel == null) yield break;
+    //private IEnumerator SimpleBlinkEffect(int index, string originalText)
+    //{
+    //    if (todoPanel == null) yield break;
 
-        // Запоминаем исходную прозрачность панели (должна быть 1)
-        float originalAlpha = todoPanel.alpha;
+    //    // Запоминаем исходную прозрачность панели (должна быть 1)
+    //    float originalAlpha = todoPanel.alpha;
 
-        // Первое моргание - исчезаем до 20%
-        float timer = 0f;
-        while (timer < 0.1f)
-        {
-            timer += Time.deltaTime;
-            todoPanel.alpha = Mathf.Lerp(originalAlpha, 0.2f, timer / 0.1f);
-            yield return null;
-        }
+    //    // Первое моргание - исчезаем до 20%
+    //    float timer = 0f;
+    //    while (timer < 0.1f)
+    //    {
+    //        timer += Time.deltaTime;
+    //        todoPanel.alpha = Mathf.Lerp(originalAlpha, 0.2f, timer / 0.1f);
+    //        yield return null;
+    //    }
 
-        // Зачеркиваем текст в середине эффекта
-        todoItems[index].text = $"<s>{originalText}</s>";
-        todoItems[index].color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+    //    // Зачеркиваем текст в середине эффекта
+    //    todoItems[index].text = $"<s>{originalText}</s>";
+    //    todoItems[index].color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
 
-        // ДОБАВЛЕНО: Правильно считаем выполненные задачи
-        completedTasks = CountCompletedTasks();
-        Debug.Log($"TodoUIManager: Задача {index} выполнена. Всего выполнено: {completedTasks}/{totalTasks}");
+    //    // ДОБАВЛЕНО: Правильно считаем выполненные задачи
+    //    completedTasks = CountCompletedTasks();
+    //    Debug.Log($"TodoUIManager: Задача {index} выполнена. Всего выполнено: {completedTasks}/{totalTasks}");
 
-        // Второе моргание - возвращаемся к 100%
-        timer = 0f;
-        while (timer < 0.1f)
-        {
-            timer += Time.deltaTime;
-            todoPanel.alpha = Mathf.Lerp(0.2f, 1f, timer / 0.1f);
-            yield return null;
-        }
+    //    // Второе моргание - возвращаемся к 100%
+    //    timer = 0f;
+    //    while (timer < 0.1f)
+    //    {
+    //        timer += Time.deltaTime;
+    //        todoPanel.alpha = Mathf.Lerp(0.2f, 1f, timer / 0.1f);
+    //        yield return null;
+    //    }
 
-        // Гарантируем что панель вернулась к полной прозрачности
-        todoPanel.alpha = 1f;
+    //    // Гарантируем что панель вернулась к полной прозрачности
+    //    todoPanel.alpha = 1f;
 
-        // ДОБАВЛЕНО: Проверяем все ли задачи выполнены и скрываем панель
-        HideAfterAllTasksCompleted();
-    }
+    //    // ДОБАВЛЕНО: Проверяем все ли задачи выполнены и скрываем панель
+    //    HideAfterAllTasksCompleted();
+    //}
 
     /// <summary>
     /// ДОБАВЛЕНО: Правильно подсчитывает количество выполненных задач

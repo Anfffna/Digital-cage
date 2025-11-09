@@ -104,7 +104,7 @@ public class DialogueTriggerTerminal : MonoBehaviour, IInteractable
         {
             Debug.Log("Update: Запускаем первую реплику диалога");
             dialogueStarted = true;
-            dialogueManager.StartDialogue(dialogueLines, OnDialogueLineFinished, true, false);
+            dialogueManager.StartDialogue(dialogueLines, OnDialogueLineFinished, true, false, false);
         }
 
         // Оставляем E для взаимодействия, но теперь оно вызывает тот же Interact()
@@ -172,7 +172,7 @@ public class DialogueTriggerTerminal : MonoBehaviour, IInteractable
         // Показываем финальную реплику
         if (dialogueManager != null && dialogueLines.Count > 2)
         {
-            dialogueManager.StartDialogue(new List<string> { dialogueLines[2] }, null);
+            dialogueManager.StartDialogue(new List<string> { dialogueLines[2] }, null, false, false, false);
 
             // Секретарь начинает движение
             if (secretary != null)

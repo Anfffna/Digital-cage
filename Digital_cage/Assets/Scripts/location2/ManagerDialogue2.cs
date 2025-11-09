@@ -4,7 +4,6 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 
-
 public class ManagerDialogue2 : MonoBehaviour
 {
     [Header("UI References")]
@@ -27,7 +26,6 @@ public class ManagerDialogue2 : MonoBehaviour
     private bool isTyping = false;
     private System.Action onDialogueEndCallback;
     private int currentLineIndex = 0; // Счетчик текущей строки
-
 
     void Awake()
     {
@@ -71,6 +69,9 @@ public class ManagerDialogue2 : MonoBehaviour
 
     void Update()
     {
+        // ВАЖНО: проверяем, не открыта ли пауза
+        if (PauseMenu.IsGamePaused) return;
+
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
             if (isTyping)
@@ -101,6 +102,9 @@ public class ManagerDialogue2 : MonoBehaviour
     /// </summary>
     public void DisplayNextLine()
     {
+        // Дополнительная проверка на паузу для надежности
+        if (PauseMenu.IsGamePaused) return;
+
         if (lines == null)
         {
             Debug.LogError("ManagerDialogue2: lines is NULL in DisplayNextLine!");
@@ -156,6 +160,12 @@ public class ManagerDialogue2 : MonoBehaviour
 
         while (i < line.Length)
         {
+            // Проверка на паузу даже во время печати
+            if (PauseMenu.IsGamePaused)
+            {
+                yield return new WaitWhile(() => PauseMenu.IsGamePaused);
+            }
+
             char c = line[i];
 
             // Обработка тегов

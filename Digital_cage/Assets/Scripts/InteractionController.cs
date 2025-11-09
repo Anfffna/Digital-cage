@@ -143,6 +143,7 @@ public class InteractionController : MonoBehaviour
                 currentInteractable is PhotoHall3 ||
                 currentInteractable is CerealBox ||
                 currentInteractable is Stereo ||
+                currentInteractable is ChairSit ||
                 currentInteractable is CorridorDoor ||
                 currentInteractable is DialogueTriggerTerminal ||
                 (currentInteractable is PhotoCapturePoint capturePoint &&

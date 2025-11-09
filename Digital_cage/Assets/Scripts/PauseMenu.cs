@@ -4,19 +4,21 @@ using UnityEngine.Rendering.PostProcessing;
 public class PauseMenu : MonoBehaviour
 {
     [Header("UI References")]
-    public GameObject pauseMenuCanvas; // Весь Canvas с меню паузы
+    public GameObject pauseMenuCanvas;
 
     [Header("Post Processing")]
-    public PostProcessVolume blurVolume; // Перетащи сюда PauseBlurVolume
+    public PostProcessVolume blurVolume;
 
     [Header("Cursor")]
-    public CursorUI cursorManager; // Перетащи сюда объект с CursorUI
+    public CursorUI cursorManager;
 
     [Header("Settings")]
     public float blurFadeSpeed = 8f;
-    public float menuFadeSpeed = 8f; // Скорость появления меню
+    public float menuFadeSpeed = 8f;
 
-    private bool isPaused = false;
+    // ДОБАВЬ ЭТУ СТРОЧКУ:
+    public static bool IsGamePaused { get; private set; } = false;
+
     private CanvasGroup menuCanvasGroup;
 
     void Start()
@@ -24,9 +26,7 @@ public class PauseMenu : MonoBehaviour
         // Изначально скрываем меню
         if (pauseMenuCanvas != null)
         {
-            pauseMenuCanvas.SetActive(true); // Активен для анимации
-
-            // Добавляем CanvasGroup для плавности
+            pauseMenuCanvas.SetActive(true);
             menuCanvasGroup = pauseMenuCanvas.GetComponent<CanvasGroup>();
             if (menuCanvasGroup == null)
                 menuCanvasGroup = pauseMenuCanvas.AddComponent<CanvasGroup>();
@@ -36,11 +36,9 @@ public class PauseMenu : MonoBehaviour
             menuCanvasGroup.blocksRaycasts = false;
         }
 
-        // ВЫКЛЮЧАЕМ размытие ПРИНУДИТЕЛЬНО
         if (blurVolume != null)
         {
-            blurVolume.weight = 0f; // ? Гарантированно 0!
-            Debug.Log("Post Processing Weight сброшен на: " + blurVolume.weight);
+            blurVolume.weight = 0f;
         }
     }
 
@@ -48,66 +46,59 @@ public class PauseMenu : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            Debug.Log("ESC pressed!");
-            if (isPaused)
+            if (IsGamePaused)
                 ResumeGame();
             else
                 PauseGame();
         }
 
-        // Плавное обновление размытия и меню
         UpdatePauseEffects();
     }
 
     void UpdatePauseEffects()
     {
-        // Плавное размытие
         if (blurVolume != null)
         {
-            float targetWeight = isPaused ? 1f : 0f;
-            float previousWeight = blurVolume.weight;
-
+            float targetWeight = IsGamePaused ? 1f : 0f;
             blurVolume.weight = Mathf.Lerp(blurVolume.weight, targetWeight,
                 Time.unscaledDeltaTime * blurFadeSpeed);
 
-            // Логируем если вес изменился
-            if (Mathf.Abs(previousWeight - blurVolume.weight) > 0.01f)
-            {
-                Debug.Log($"Blur Weight: {blurVolume.weight:F2}, Target: {targetWeight}, isPaused: {isPaused}");
-            }
-
-            // ДОБАВЬ ПРОВЕРКУ: если близко к 0 - ставим точно 0
-            if (!isPaused && blurVolume.weight < 0.01f)
+            if (!IsGamePaused && blurVolume.weight < 0.01f)
             {
                 blurVolume.weight = 0f;
             }
         }
 
-        // Плавное появление/исчезновение меню
         if (menuCanvasGroup != null)
         {
-            float targetAlpha = isPaused ? 1f : 0f;
+            float targetAlpha = IsGamePaused ? 1f : 0f;
             menuCanvasGroup.alpha = Mathf.Lerp(menuCanvasGroup.alpha, targetAlpha,
                 Time.unscaledDeltaTime * menuFadeSpeed);
 
-            // Включаем/выключаем интерактивность когда анимация завершена
-            if (isPaused && menuCanvasGroup.alpha > 0.9f)
+            if (IsGamePaused && menuCanvasGroup.alpha > 0.1f)
             {
-                menuCanvasGroup.interactable = true;
                 menuCanvasGroup.blocksRaycasts = true;
+                menuCanvasGroup.interactable = true;
             }
-            else if (!isPaused && menuCanvasGroup.alpha < 0.1f)
+            else if (!IsGamePaused && menuCanvasGroup.alpha < 0.1f)
             {
-                menuCanvasGroup.interactable = false;
                 menuCanvasGroup.blocksRaycasts = false;
+                menuCanvasGroup.interactable = false;
             }
         }
     }
 
     public void PauseGame()
     {
-        isPaused = true;
+        // ИЗМЕНИ ЭТУ СТРОЧКУ:
+        IsGamePaused = true; // было: isPaused = true;
         Time.timeScale = 0f;
+
+        if (menuCanvasGroup != null)
+        {
+            menuCanvasGroup.blocksRaycasts = true;
+            menuCanvasGroup.interactable = true;
+        }
 
         if (cursorManager != null)
         {
@@ -115,7 +106,7 @@ public class PauseMenu : MonoBehaviour
         }
         else
         {
-            Cursor.visible = false;
+            Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
         }
 
@@ -124,20 +115,21 @@ public class PauseMenu : MonoBehaviour
 
     public void ResumeGame()
     {
-        isPaused = false;
+        // ИЗМЕНИ ЭТУ СТРОЧКУ:
+        IsGamePaused = false; // было: isPaused = false;
         Time.timeScale = 1f;
 
-        // Проверяем, активно ли еще объявление о работе
+        if (menuCanvasGroup != null)
+        {
+            menuCanvasGroup.blocksRaycasts = false;
+            menuCanvasGroup.interactable = false;
+        }
+
         JobAdController jobAd = FindObjectOfType<JobAdController>();
         bool isJobAdActive = jobAd != null && jobAd.jobAdPanel != null && jobAd.jobAdPanel.activeInHierarchy;
 
-        // ДОБАВИМ ПРОВЕРКУ НА ТИП СЦЕНЫ
-        // Если это сцена с игровым процессом (без JobAd) - выключаем курсор
-        // Если это UI-сцена (с JobAd) - оставляем курсор
-
         if (isJobAdActive)
         {
-            // UI-сцена (объявление активно) - курсор ВКЛЮЧЕН
             if (cursorManager != null)
             {
                 cursorManager.ShowCursor();
@@ -146,7 +138,6 @@ public class PauseMenu : MonoBehaviour
         }
         else
         {
-            // Игровая сцена (объявления нет) - курсор ВЫКЛЮЧЕН
             if (cursorManager != null)
             {
                 cursorManager.HideCursor();
@@ -159,6 +150,7 @@ public class PauseMenu : MonoBehaviour
 
     public void ExitToMainMenu()
     {
+        IsGamePaused = false; // И здесь тоже
         Time.timeScale = 1f;
         UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
