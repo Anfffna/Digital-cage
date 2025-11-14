@@ -9,24 +9,21 @@ public class BathroomSilhouette : MonoBehaviour
     [SerializeField] private float hideDelay = 0.5f;
 
     [Header("Диалог")]
-    [SerializeField] private ManagerDialogue2 dialogueManager;
-    [SerializeField] private List<string> dialogueLines;
+    [SerializeField] public ManagerDialogue2 dialogueManager;
+    [SerializeField] public List<string> dialogueLines;
 
     [Header("Другие компоненты")]
     [SerializeField] private Collider bathroomTrigger;
-    [SerializeField] private Collider limitBathroom;
-    [SerializeField] private TodoUIManager todoManager;
 
     private bool hasTriggered = false;
     private Animator silhouetteAnimator;
     private Renderer silhouetteRenderer;
     private Transform player;
     private Camera playerCamera;
-    private bool waitingForTodo = false;
+    private bool systemActivated = false;
 
     void Awake()
     {
-        // Выключаем только компоненты, а не весь GameObject
         SetSilhouetteVisible(false);
         SetCollidersEnabled(false);
     }
@@ -39,30 +36,23 @@ public class BathroomSilhouette : MonoBehaviour
         silhouetteAnimator = silhouette.GetComponent<Animator>();
         silhouetteRenderer = silhouette.GetComponent<Renderer>();
 
-        // Дублируем выключение
         SetSilhouetteVisible(false);
         SetCollidersEnabled(false);
-
-        // Запускаем проверку туду в Update вместо корутины
-        waitingForTodo = true;
     }
 
     void Update()
     {
-        if (waitingForTodo && todoManager != null && todoManager.todoPanel != null && todoManager.todoPanel.alpha >= 0.99f)
+        // АКТИВИРУЕМСЯ ТОЛЬКО КОГДА НАЧИНАЕТСЯ ADVENT DOOR
+        if (!systemActivated && IsAdventDoorReady())
         {
-            // Ждем пока нет активных диалогов
-            if (!IsAnyDialogueActive())
-            {
-                waitingForTodo = false;
-                StartCoroutine(ActivateSystem());
-            }
+            systemActivated = true;
+            StartCoroutine(ActivateSystem());
         }
     }
 
     IEnumerator ActivateSystem()
     {
-        // Включаем коллайдеры
+        // Включаем коллайдер
         SetCollidersEnabled(true);
 
         // Ждем пока игрок НЕ смотрит на место силуэта
@@ -76,9 +66,6 @@ public class BathroomSilhouette : MonoBehaviour
     {
         if (bathroomTrigger != null)
             bathroomTrigger.enabled = enabled;
-
-        if (limitBathroom != null)
-            limitBathroom.enabled = enabled;
     }
 
     bool IsPlayerLookingAtSilhouette()
@@ -93,12 +80,20 @@ public class BathroomSilhouette : MonoBehaviour
 
     bool IsAnyDialogueActive()
     {
-        // Проверяем активен ли диалог через dialoguePanel
         if (dialogueManager != null && dialogueManager.dialoguePanel != null)
         {
             return dialogueManager.dialoguePanel.activeInHierarchy;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Проверяет, готов ли AdventDoor (двери появились)
+    /// </summary>
+    private bool IsAdventDoorReady()
+    {
+        AdventDoor adventDoor = FindObjectOfType<AdventDoor>();
+        return adventDoor != null && adventDoor.DoorsSpawned;
     }
 
     void ShowSilhouette()

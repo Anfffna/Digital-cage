@@ -157,7 +157,15 @@ public class PauseMenu : MonoBehaviour
 
     public void SaveGame()
     {
-        Debug.Log("Игра сохранена!");
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.SaveGame();
+            Debug.Log("Игра сохранена через SaveManager!");
+        }
+        else
+        {
+            Debug.LogError("SaveManager не найден!");
+        }
     }
 
     public void LoadGame()

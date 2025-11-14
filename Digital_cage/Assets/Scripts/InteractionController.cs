@@ -144,7 +144,14 @@ public class InteractionController : MonoBehaviour
                 currentInteractable is CerealBox ||
                 currentInteractable is Stereo ||
                 currentInteractable is ChairSit ||
+                currentInteractable is AdventDoor ||
+                currentInteractable is InteractableDoor ||
                 currentInteractable is CorridorDoor ||
+                currentInteractable is LightSwitch ||
+                currentInteractable is CarpetMovement ||
+                currentInteractable is DoorBasement ||
+                currentInteractable is ShadowBasement ||
+                currentInteractable is GameMachine ||
                 currentInteractable is DialogueTriggerTerminal ||
                 (currentInteractable is PhotoCapturePoint capturePoint &&
                  (capturePoint.todoIndex == 1 || capturePoint.todoIndex == 2)))
@@ -170,6 +177,13 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is PhotoHall3) return;
         if (currentInteractable is Stereo) return;
         if (currentInteractable is CerealBox) return;
+        if (currentInteractable is AdventDoor) return;
+        if (currentInteractable is InteractableDoor) return;
+        if (currentInteractable is LightSwitch) return;
+        if (currentInteractable is CarpetMovement) return;
+        if (currentInteractable is DoorBasement) return;
+        if (currentInteractable is ShadowBasement) return;
+        if (currentInteractable is GameMachine) return;
 
         // === Обычное поведение для остальных объектов ===
         if (interactionUI != null)

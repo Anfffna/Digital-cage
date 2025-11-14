@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/2locationHorror.unity
     guid: c049296e42129d64abbbeabc7647f7b9
+  - enabled: 1
+    path: Assets/Scenes/3endNightmares.unity
+    guid: e63f54206d966474ba1e1c45b9fc8759
   m_configObjects: {}

@@ -179,6 +179,9 @@ public class TVGlitchEffect : MonoBehaviour
         }
 
         isGlitching = false;
+
+        ActivateClosedDoorTrigger();
+        yield break;
     }
 
     /// <summary>
@@ -280,6 +283,21 @@ public class TVGlitchEffect : MonoBehaviour
         if (isGlitching)
         {
             StopGlitchEffect();
+        }
+    }
+
+    /// Активирует триггер закрытой двери после завершения глитч-эффекта
+    private void ActivateClosedDoorTrigger()
+    {
+        ClosedDoorTrigger doorTrigger = FindObjectOfType<ClosedDoorTrigger>();
+        if (doorTrigger != null)
+        {
+            doorTrigger.EnableTrigger();
+            Debug.Log("TVGlitchEffect: Триггер закрытой двери активирован");
+        }
+        else
+        {
+            Debug.LogWarning("TVGlitchEffect: ClosedDoorTrigger не найден в сцене");
         }
     }
 }
