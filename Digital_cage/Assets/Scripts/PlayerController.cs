@@ -182,6 +182,24 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void SetMovementEnabled(bool enabled)
+    {
+        canMove = enabled;
+
+        if (!enabled)
+        {
+            // Останавливаем звуки шагов при блокировке движения
+            if (footstepAudioSource != null && footstepAudioSource.isPlaying)
+            {
+                footstepAudioSource.Stop();
+            }
+
+            // Сбрасываем velocity чтобы игрок не продолжал движение по инерции
+            velocity = Vector3.zero;
+        }
+
+        Debug.Log("PlayerController: Движение " + (enabled ? "разблокировано" : "заблокировано"));
+    }
 
     // ДОБАВЛЕННЫЕ МЕТОДЫ ДЛЯ ВЗАИМОДЕЙСТВИЯ СО СТУЛОМ
     public void OnSitDown()

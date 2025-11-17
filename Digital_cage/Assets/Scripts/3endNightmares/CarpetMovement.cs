@@ -16,13 +16,16 @@ public class CarpetMovement : MonoBehaviour, IInteractable
     [Header("Todo Settings")]
     public LightTodoUIManager todoManager;
 
+    [Header("Audio Settings")]
+    public AudioClip carpetSound;
+    public AudioSource audioSource;
+
     private bool hasBeenActivated = false;
     private bool isInteractable = false;
     private bool dialogueTriggered = false;
 
     void Start()
     {
-        // ЖЕСТКАЯ блокировка
         gameObject.layer = LayerMask.NameToLayer("Default");
 
         Collider collider = GetComponent<Collider>();
@@ -36,9 +39,17 @@ public class CarpetMovement : MonoBehaviour, IInteractable
             carpetAnimator.Play("idle");
         }
 
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            Debug.Log("CarpetMovement: AudioSource создан автоматически");
+        }
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+
         Debug.Log("CarpetMovement: Ковер заблокирован при старте");
 
-        // Запускаем проверку через 1 секунду чтобы все успело инициализироваться
         InvokeRepeating("CheckTodoState", 1f, 0.5f);
     }
 
@@ -52,7 +63,7 @@ public class CarpetMovement : MonoBehaviour, IInteractable
         if (isNewTaskActive)
         {
             UnlockCarpet();
-            CancelInvoke("CheckTodoState"); // Останавливаем проверку
+            CancelInvoke("CheckTodoState");
         }
     }
 
@@ -74,7 +85,9 @@ public class CarpetMovement : MonoBehaviour, IInteractable
     public string GetInteractionText()
     {
         if (!isInteractable || hasBeenActivated)
+        {
             return "";
+        }
 
         return "Нажмите E";
     }
@@ -89,6 +102,8 @@ public class CarpetMovement : MonoBehaviour, IInteractable
 
         Debug.Log("CarpetMovement: Взаимодействие с ковром начато");
         dialogueTriggered = true;
+
+        // УБРАТЬ отсюда проигрывание звука
 
         if (dialogueManager != null && dialogueLines != null && dialogueLines.Count > 0)
         {
@@ -114,6 +129,24 @@ public class CarpetMovement : MonoBehaviour, IInteractable
         if (carpetAnimator != null)
         {
             carpetAnimator.Play("movement");
+
+            // Проигрываем звук когда начинается анимация movement
+            if (carpetSound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(carpetSound);
+                Debug.Log("CarpetMovement: Проигрывается звук ковра при начале анимации movement");
+            }
+            else
+            {
+                if (carpetSound == null)
+                {
+                    Debug.LogWarning("CarpetMovement: CarpetSound не назначен!");
+                }
+                if (audioSource == null)
+                {
+                    Debug.LogWarning("CarpetMovement: AudioSource не найден!");
+                }
+            }
         }
 
         gameObject.layer = LayerMask.NameToLayer("Default");

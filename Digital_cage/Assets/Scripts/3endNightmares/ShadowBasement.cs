@@ -60,6 +60,9 @@ public class ShadowBasement : MonoBehaviour, IInteractable
 
         dialogueTriggered = true;
 
+        // Ќ≈ћ≈ƒЋ≈ЌЌќ мен€ем слой на одноразовое взаимодействие
+        gameObject.layer = LayerMask.NameToLayer("Default");
+
         if (dialogueManager != null && dialogueLines != null && dialogueLines.Count > 0)
         {
             dialogueManager.OnDialogueIndexReached += OnDialogueIndexReached;
@@ -109,7 +112,7 @@ public class ShadowBasement : MonoBehaviour, IInteractable
 
         hasBeenUsed = true;
         dialogueTriggered = false;
-        gameObject.layer = LayerMask.NameToLayer("Default");
+        // —лой уже изменен в методе Interact(), так что здесь не нужно мен€ть слой повторно
     }
 
     private IEnumerator GlitchEffect()

@@ -38,9 +38,18 @@ public class InteractionController : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         RaycastHit hit;
 
-        // ќдин точный выстрел Ч только в ближайший объект
-        if (Physics.Raycast(ray, out hit, interactionDistance, interactableMask))
+        // »—ѕќЋ№«”≈ћ Raycast Ѕ≈« LayerMask - чтобы луч останавливалс€ на любых объектах
+        if (Physics.Raycast(ray, out hit, interactionDistance))
         {
+            // ѕ–ќ¬≈–я≈ћ вручную: находитс€ ли объект на нужном слое?
+            bool isOnInteractableLayer = ((1 << hit.collider.gameObject.layer) & interactableMask) != 0;
+
+            if (!isOnInteractableLayer)
+            {
+                ClearCurrentInteractable();
+                return;
+            }
+
             IInteractable interactable = hit.collider.gameObject.GetComponent<IInteractable>();
 
             // ≈сли на коллайдере нет скрипта Ч игнорируем (не берЄм с родител€!)
@@ -150,6 +159,9 @@ public class InteractionController : MonoBehaviour
                 currentInteractable is LightSwitch ||
                 currentInteractable is CarpetMovement ||
                 currentInteractable is DoorBasement ||
+                currentInteractable is ExitBasement ||
+                currentInteractable is ExitLock ||
+                currentInteractable is ExitDoor ||
                 currentInteractable is ShadowBasement ||
                 currentInteractable is GameMachine ||
                 currentInteractable is DialogueTriggerTerminal ||
@@ -182,8 +194,12 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is LightSwitch) return;
         if (currentInteractable is CarpetMovement) return;
         if (currentInteractable is DoorBasement) return;
+        if (currentInteractable is ExitBasement) return;
+        if (currentInteractable is ExitLock) return;
+        if (currentInteractable is ExitDoor) return;
         if (currentInteractable is ShadowBasement) return;
         if (currentInteractable is GameMachine) return;
+        if (currentInteractable is Note) return;
 
         // === ќбычное поведение дл€ остальных объектов ===
         if (interactionUI != null)

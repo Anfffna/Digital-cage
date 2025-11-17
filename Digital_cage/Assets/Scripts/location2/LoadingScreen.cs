@@ -132,6 +132,25 @@ public class LoadingScreen : MonoBehaviour
         }
     }
 
+    public void MuteAllAudio()
+    {
+        // Останавливаем все аудио источники в сцене
+        AudioSource[] allAudioSources = FindObjectsOfType<AudioSource>();
+        foreach (AudioSource audioSource in allAudioSources)
+        {
+            audioSource.Stop();
+        }
+
+        // Также отключаем AudioListener чтобы полностью заглушить звук
+        AudioListener audioListener = FindObjectOfType<AudioListener>();
+        if (audioListener != null)
+        {
+            audioListener.enabled = false;
+        }
+
+        Debug.Log("Все аудио источники остановлены");
+    }
+
     private void HideAllSegments()
     {
         foreach (Image segment in loadingSegments)

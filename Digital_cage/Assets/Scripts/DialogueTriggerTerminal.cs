@@ -32,6 +32,10 @@ public class DialogueTriggerTerminal : MonoBehaviour, IInteractable
     [Header("Scan Line Animation")]
     public Animator scanLineAnimator;   // Animator полоски ScanLine
 
+    [Header("Audio Settings")]
+    public AudioClip scanLineSound;
+    public AudioSource audioSource;
+
     [Header("Phone Condition")]
     public HandPhoneController phoneController; // ссылка на HandPhoneController (у игрока)
 
@@ -77,6 +81,15 @@ public class DialogueTriggerTerminal : MonoBehaviour, IInteractable
 
         if (dialogueManager == null)
             Debug.LogWarning("DialogueManager не назначен!");
+
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            Debug.Log("DialogueTriggerTerminal: AudioSource создан автоматически");
+        }
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
     }
 
     void Update()
@@ -155,6 +168,20 @@ public class DialogueTriggerTerminal : MonoBehaviour, IInteractable
         if (scanLineAnimator != null)
             scanLineAnimator.SetTrigger("GoScanLine");
 
+        // ВКЛЮЧАЕМ ЗВУК СКАНЛАЙНА именно в этот момент
+        if (scanLineSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(scanLineSound);
+            Debug.Log("DialogueTriggerTerminal: Проигрывается звук сканлайна");
+        }
+        else
+        {
+            if (scanLineSound == null)
+                Debug.LogWarning("DialogueTriggerTerminal: ScanLineSound не назначен!");
+            if (audioSource == null)
+                Debug.LogWarning("DialogueTriggerTerminal: AudioSource не найден!");
+        }
+
         // Плавное движение руки
         if (playerHand != null && handPivotTarget != null)
             yield return StartCoroutine(MoveHandToPivotCoroutine(playerHand, handPivotTarget, 0.6f));
@@ -168,6 +195,13 @@ public class DialogueTriggerTerminal : MonoBehaviour, IInteractable
 
         // Ждём вторую половину
         yield return new WaitForSeconds(totalAnimationTime / 2f);
+
+        // ОСТАНАВЛИВАЕМ ЗВУК когда сканлайн заканчивается
+        if (audioSource != null && audioSource.isPlaying)
+        {
+            audioSource.Stop();
+            Debug.Log("DialogueTriggerTerminal: Звук сканлайна остановлен");
+        }
 
         // Показываем финальную реплику
         if (dialogueManager != null && dialogueLines.Count > 2)

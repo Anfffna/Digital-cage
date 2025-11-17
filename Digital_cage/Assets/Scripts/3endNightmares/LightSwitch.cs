@@ -12,6 +12,10 @@ public class LightSwitch : MonoBehaviour, IInteractable
     [Header("Todo Settings")]
     public LightTodoUIManager todoManager;
 
+    [Header("Audio Settings")]
+    public AudioClip switchOnSound;
+    public AudioSource audioSource;
+
     private bool isInteractable = false;
     private bool hasBeenUsed = false;
     private bool dialogueTriggered = false;
@@ -20,6 +24,16 @@ public class LightSwitch : MonoBehaviour, IInteractable
     {
         gameObject.layer = LayerMask.NameToLayer("Interactable");
         SetInteractable(false);
+
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            Debug.Log("LightSwitch: AudioSource создан автоматически");
+        }
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+
         StartCoroutine(CheckTodoUIAvailability());
     }
 
@@ -64,27 +78,47 @@ public class LightSwitch : MonoBehaviour, IInteractable
     public string GetInteractionText()
     {
         if (!isInteractable || hasBeenUsed)
+        {
             return "";
+        }
 
         return "Нажмите E";
     }
 
     public void Interact()
     {
-        if (!isInteractable || hasBeenUsed || dialogueTriggered) return;
+        if (!isInteractable || hasBeenUsed || dialogueTriggered)
+        {
+            return;
+        }
+
+        if (switchOnSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(switchOnSound);
+            Debug.Log("LightSwitch: Проигрывается звук включения выключателя");
+        }
+        else
+        {
+            if (switchOnSound == null)
+            {
+                Debug.LogWarning("LightSwitch: SwitchOnSound не назначен!");
+            }
+            if (audioSource == null)
+            {
+                Debug.LogWarning("LightSwitch: AudioSource не найден!");
+            }
+        }
 
         SetInteractable(false);
         hasBeenUsed = true;
         dialogueTriggered = true;
 
-        // Запускаем диалог если есть
         if (dialogueManager != null && dialogueLines != null && dialogueLines.Count > 0)
         {
             dialogueManager.StartDialogue(dialogueLines, OnDialogueEnd);
         }
         else
         {
-            // Если диалога нет, сразу завершаем задачу
             CompleteTask();
         }
     }

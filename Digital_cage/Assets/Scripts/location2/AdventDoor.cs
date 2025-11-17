@@ -201,10 +201,11 @@ public class AdventDoor : MonoBehaviour, IInteractable
             dialogueManager.dialoguePanel.SetActive(false);
         }
 
-        // Çàïóñêàåì loading screen
+        // ÂÛÊËŞ×ÀÅÌ ÂÅÑÜ ÇÂÓÊ ÏÅĞÅÄ ÇÀÏÓÑÊÎÌ LOADING SCREEN
         LoadingScreen loadingScreen = FindObjectOfType<LoadingScreen>();
         if (loadingScreen != null)
         {
+            loadingScreen.MuteAllAudio(); // ? ÄÎÁÀÂÜ İÒÓ ÑÒĞÎÊÓ
             loadingScreen.StartLoadingScreen();
         }
     }

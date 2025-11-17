@@ -12,10 +12,12 @@ public class LightTodoUIManager : MonoBehaviour
 
     [Header("Todo Items")]
     public TextMeshProUGUI lightTaskText;
-    public TextMeshProUGUI newTaskText; // Новый текст для замены
+    public TextMeshProUGUI newTaskText;
+    public TextMeshProUGUI thirdTaskText;
 
     private bool isShowing = false;
-    private bool isCompleted = false;
+    private bool isLightTaskCompleted = false;
+    private bool isNewTaskCompleted = false;
     private Coroutine fadeCoroutine;
 
     void Start()
@@ -26,25 +28,30 @@ public class LightTodoUIManager : MonoBehaviour
             todoPanel.gameObject.SetActive(false);
         }
 
-        // Скрываем новый текст изначально
         if (newTaskText != null)
         {
             newTaskText.gameObject.SetActive(false);
-            Debug.Log("LightTodoUIManager: newTaskText скрыт в Start()");
+        }
+
+        if (thirdTaskText != null)
+        {
+            thirdTaskText.gameObject.SetActive(false);
         }
     }
 
-    // ДОБАВЬ ЭТОТ МЕТОД ДЛЯ ПРОВЕРКИ
     public bool IsNewTaskActive()
     {
-        bool isActive = newTaskText != null && newTaskText.gameObject.activeInHierarchy;
-        Debug.Log($"LightTodoUIManager: IsNewTaskActive() = {isActive}");
-        return isActive;
+        return newTaskText != null && newTaskText.gameObject.activeInHierarchy;
+    }
+
+    public bool IsThirdTaskActive()
+    {
+        return thirdTaskText != null && thirdTaskText.gameObject.activeInHierarchy;
     }
 
     public void ShowTodoList()
     {
-        if (isShowing || todoPanel == null || isCompleted) return;
+        if (isShowing || todoPanel == null) return;
 
         Debug.Log("LightTodoUIManager: ShowTodoList() вызван");
         if (fadeCoroutine != null)
@@ -98,10 +105,10 @@ public class LightTodoUIManager : MonoBehaviour
 
     public void CompleteLightTask()
     {
-        if (isCompleted || lightTaskText == null) return;
+        if (isLightTaskCompleted || lightTaskText == null || newTaskText == null) return;
 
         Debug.Log("LightTodoUIManager: CompleteLightTask() вызван");
-        isCompleted = true;
+        isLightTaskCompleted = true;
         StartCoroutine(ReplaceTaskText());
     }
 
@@ -111,7 +118,7 @@ public class LightTodoUIManager : MonoBehaviour
 
         Debug.Log("LightTodoUIManager: Начинаем замену текста");
 
-        // Плавно исчезает старый текст
+        // Исчезает старый текст
         float fadeTimer = 0f;
         Color startColor = lightTaskText.color;
 
@@ -131,7 +138,7 @@ public class LightTodoUIManager : MonoBehaviour
 
         Debug.Log("LightTodoUIManager: newTaskText активирован!");
 
-        // Плавно появляется новый текст
+        // Появляется новый текст
         fadeTimer = 0f;
         while (fadeTimer < 0.5f)
         {
@@ -140,8 +147,116 @@ public class LightTodoUIManager : MonoBehaviour
             newTaskText.color = new Color(newTaskText.color.r, newTaskText.color.g, newTaskText.color.b, Mathf.Lerp(0f, 1f, progress));
             yield return null;
         }
+    }
 
-        // УБРАНО скрытие панели - теперь она остается видимой с новым заданием
+    public void CompleteThirdTask()
+    {
+        if (isNewTaskCompleted || newTaskText == null || thirdTaskText == null) return;
+
+        Debug.Log("LightTodoUIManager: CompleteThirdTask() вызван");
+        isNewTaskCompleted = true;
+        StartCoroutine(ReplaceWithThirdTask());
+    }
+
+    private IEnumerator ReplaceWithThirdTask()
+    {
+        if (newTaskText == null || thirdTaskText == null) yield break;
+
+        Debug.Log("LightTodoUIManager: Заменяем на третий пункт");
+
+        // Исчезает второй текст
+        float fadeTimer = 0f;
+        Color startColor = newTaskText.color;
+
+        while (fadeTimer < 0.5f)
+        {
+            fadeTimer += Time.deltaTime;
+            float progress = fadeTimer / 0.5f;
+            newTaskText.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, progress));
+            yield return null;
+        }
+
+        newTaskText.gameObject.SetActive(false);
+
+        // Показываем третий текст
+        thirdTaskText.gameObject.SetActive(true);
+        thirdTaskText.color = new Color(thirdTaskText.color.r, thirdTaskText.color.g, thirdTaskText.color.b, 0f);
+
+        Debug.Log("LightTodoUIManager: thirdTaskText активирован!");
+
+        // Появляется третий текст
+        fadeTimer = 0f;
+        while (fadeTimer < 0.5f)
+        {
+            fadeTimer += Time.deltaTime;
+            float progress = fadeTimer / 0.5f;
+            thirdTaskText.color = new Color(thirdTaskText.color.r, thirdTaskText.color.g, thirdTaskText.color.b, Mathf.Lerp(0f, 1f, progress));
+            yield return null;
+        }
+    }
+
+    public void ReplaceCurrentTaskWithExitText(string exitText = "Exit text")
+    {
+        Debug.Log("LightTodoUIManager: ReplaceCurrentTaskWithExitText вызван");
+
+        // Проверяем какой пункт сейчас активен и заменяем его
+        if (IsThirdTaskActive() && thirdTaskText != null)
+        {
+            // Если третий пункт активен - заменяем его
+            StartCoroutine(ReplaceTaskWithExitText(thirdTaskText, exitText));
+            Debug.Log("LightTodoUIManager: Заменяем третий пункт на Exit text");
+        }
+        else if (IsNewTaskActive() && newTaskText != null)
+        {
+            // Если второй пункт активен - заменяем его
+            StartCoroutine(ReplaceTaskWithExitText(newTaskText, exitText));
+            Debug.Log("LightTodoUIManager: Заменяем второй пункт на Exit text");
+        }
+        else if (lightTaskText != null && lightTaskText.gameObject.activeInHierarchy)
+        {
+            // Если только первый пункт активен - заменяем его
+            StartCoroutine(ReplaceTaskWithExitText(lightTaskText, exitText));
+            Debug.Log("LightTodoUIManager: Заменяем первый пункт на Exit text");
+        }
+        else
+        {
+            Debug.LogWarning("LightTodoUIManager: Нет активных пунктов для замены!");
+        }
+    }
+
+    private IEnumerator ReplaceTaskWithExitText(TextMeshProUGUI taskText, string exitText)
+    {
+        if (taskText == null) yield break;
+
+        Debug.Log($"LightTodoUIManager: Заменяем текст на '{exitText}'");
+
+        // Исчезает текущий текст
+        float fadeTimer = 0f;
+        Color startColor = taskText.color;
+
+        while (fadeTimer < 0.5f)
+        {
+            fadeTimer += Time.deltaTime;
+            float progress = fadeTimer / 0.5f;
+            taskText.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, progress));
+            yield return null;
+        }
+
+        // Меняем текст на Exit text
+        taskText.text = exitText;
+        taskText.color = new Color(taskText.color.r, taskText.color.g, taskText.color.b, 0f);
+
+        // Появляется новый текст
+        fadeTimer = 0f;
+        while (fadeTimer < 0.5f)
+        {
+            fadeTimer += Time.deltaTime;
+            float progress = fadeTimer / 0.5f;
+            taskText.color = new Color(taskText.color.r, taskText.color.g, taskText.color.b, Mathf.Lerp(0f, 1f, progress));
+            yield return null;
+        }
+
+        Debug.Log("LightTodoUIManager: Текст успешно заменен на Exit text");
     }
 
     void OnDestroy()
