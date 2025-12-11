@@ -162,6 +162,7 @@ public class InteractionController : MonoBehaviour
                 currentInteractable is ExitBasement ||
                 currentInteractable is ExitLock ||
                 currentInteractable is ExitDoor ||
+                currentInteractable is DoorExit0 ||
                 currentInteractable is ShadowBasement ||
                 currentInteractable is GameMachine ||
                 currentInteractable is DialogueTriggerTerminal ||
@@ -200,6 +201,8 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is ShadowBasement) return;
         if (currentInteractable is GameMachine) return;
         if (currentInteractable is Note) return;
+        if (currentInteractable is Oferta) return;
+        if (currentInteractable is DoorExit0) return;
 
         // === Обычное поведение для остальных объектов ===
         if (interactionUI != null)

@@ -1,58 +1,72 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class EntryDialogue : MonoBehaviour
 {
     [Header("Dialogue Settings")]
-    public DialogueManager dialogueManager;
+    public DialogueManager0 dialogueManager;
     public SignatureDrawerTexture signatureDrawer;
 
     [TextArea(2, 5)]
     public List<string> dialogueLines;
 
-    [Header("Auto Start Settings")]
-    public bool startOnTrigger = false;
-    public float startDelay = 0f;
+    [Header("Oferta Settings")]
+    public GameObject ofertaSprite; // спрайт оферты
+    public float ofertaSpriteDelay = 2f;   // через сколько показать спрайт
+    public float dialogueDelayAfterSprite = 1f; // через сколько запустить диалог после спрайта
 
     [Header("Black Screen Settings")]
-    public BlackScreenController blackScreenController; // вместо Image
+    public BlackScreenController blackScreenController;
 
-    private bool triggered = false;
+    [Header("Cursor Manager")]
+    public CursorUI cursorManager;
+
+    // В начале класса EntryDialogue
+    public event System.Action OnSignatureCompleted;
+
+
     private bool signatureCompleted = false;
+    public bool SignatureCompleted => signatureCompleted;
     private bool waitingForBlackScreen = false;
 
-    void OnTriggerEnter(Collider other)
+    // ------------------------------------------
+    // Внешний метод для открытия UI оферты
+    // ------------------------------------------
+    public void OpenUI()
     {
-        if (!startOnTrigger) return;
+        // 1. Активируем UI оферты
+        gameObject.SetActive(true);  // EntryDialogue / UI панель должна быть активной
 
-        if (other.CompareTag("Player") && !triggered)
-        {
-            triggered = true;
-            if (startDelay > 0)
-                StartCoroutine(StartDialogueWithDelay(startDelay));
-            else
-                StartDialogue();
-        }
+        // 2. Показываем курсор
+        if (cursorManager != null)
+            cursorManager.ShowCursor();
+
+        // 3. Если есть спрайт оферты, запускаем корутину
+        if (ofertaSprite != null)
+            StartCoroutine(ShowSpriteThenDialogue());
+        else
+            StartDialogue();
     }
 
-    private IEnumerator StartDialogueWithDelay(float delay)
+
+    private IEnumerator ShowSpriteThenDialogue()
     {
-        yield return new WaitForSeconds(delay);
+        // Ждем перед показом спрайта
+        yield return new WaitForSeconds(ofertaSpriteDelay);
+
+        ofertaSprite.SetActive(true);
+        Debug.Log("EntryDialogue: Спрайт оферты показан!");
+
+        // Ждем перед стартом диалога
+        yield return new WaitForSeconds(dialogueDelayAfterSprite);
+
         StartDialogue();
     }
 
-    void Update()
-    {
-        if (waitingForBlackScreen && Input.GetMouseButtonDown(0))
-        {
-            waitingForBlackScreen = false;
-            Debug.Log("Запускаем черный экран после клика");
-            StartCoroutine(BlackScreenSequence());
-        }
-    }
-
+    // ------------------------------------------
+    // Основной диалог EntryDialogue
+    // ------------------------------------------
     public void StartDialogue()
     {
         if (dialogueManager == null)
@@ -66,76 +80,76 @@ public class EntryDialogue : MonoBehaviour
         // Запускаем диалог до 4 индекса включительно
         List<string> initialLines = new List<string>();
         for (int i = 0; i <= 4 && i < dialogueLines.Count; i++)
-        {
             initialLines.Add(dialogueLines[i]);
-        }
 
-        dialogueManager.StartDialogue(initialLines, OnLineFinished, false, false);
+        dialogueManager.StartDialogue(initialLines, () => OnLineFinishedWrapper(initialLines));
     }
 
-    private void OnRemainingLinesFinished(int lineIndex)
+    private void OnLineFinishedWrapper(List<string> lines)
     {
-        // lineIndex здесь 0 или 1 (относительно нового диалога)
-        Debug.Log($"Завершена оставшаяся строка {lineIndex}");
+        Debug.Log("EntryDialogue: Завершение начальных линий");
 
-        if (lineIndex == 1) // Это вторая строка в новом диалоге (6 индекс оригинальный)
+        if (!gameObject.activeInHierarchy)  // если объект неактивен — включаем
+            gameObject.SetActive(true);
+
+        if (lines.Count == 0) return;
+        int lastIndex = lines.Count - 1;
+
+        if (lastIndex >= 4 && signatureDrawer != null)
         {
-            Debug.Log("Запускаем черный экран после 6 индекса");
+            signatureDrawer.gameObject.SetActive(true);
+            StartCoroutine(CheckForSignature());
+        }
+    }
+
+
+    private void OnRemainingLinesFinishedWrapper(List<string> lines)
+    {
+        if (lines.Count >= 2)
+        {
             waitingForBlackScreen = true;
+            Debug.Log("EntryDialogue: Запускаем черный экран после оставшихся линий");
         }
-    }
-
-    private void OnLineFinished(int lineIndex)
-    {
-        Debug.Log($"Завершена строка {lineIndex}: {dialogueLines[lineIndex]}");
-
-        if (lineIndex == 4)
-        {
-            Debug.Log("Активируем поле для подписи");
-            if (signatureDrawer != null)
-            {
-                signatureDrawer.gameObject.SetActive(true);
-                StartCoroutine(CheckForSignature());
-            }
-        }
-        // Убрал отсюда обработку 6 индекса
     }
 
     private IEnumerator CheckForSignature()
     {
-        Debug.Log("Начинаем проверку подписи...");
-
         while (!signatureCompleted)
         {
             yield return new WaitForSeconds(0.5f);
 
-            if (signatureDrawer.IsSigned())
+            if (signatureDrawer != null && signatureDrawer.IsSigned())
             {
                 signatureCompleted = true;
-                Debug.Log("ПОДПИСЬ ОБНАРУЖЕНА! Показываем строки 5 и 6");
 
-                // Запускаем диалог с 5 и 6 индексами
+                // вызываем событие для всех подписчиков
+                OnSignatureCompleted?.Invoke();
+
                 List<string> remainingLines = new List<string>();
                 if (dialogueLines.Count > 5) remainingLines.Add(dialogueLines[5]);
                 if (dialogueLines.Count > 6) remainingLines.Add(dialogueLines[6]);
 
-                // Используем специальный колбэк для этих строк
-                dialogueManager.StartDialogue(remainingLines, OnRemainingLinesFinished, false, false);
+                dialogueManager.StartDialogue(remainingLines, () => OnRemainingLinesFinishedWrapper(remainingLines));
             }
+
         }
     }
 
     private IEnumerator BlackScreenSequence()
     {
-        Debug.Log("Скрываем объявление и запускаем черный экран");
+        if (blackScreenController != null)
+            blackScreenController.StartCoroutine(blackScreenController.ShowBlackScreen());
 
-        // Сначала запускаем черный экран
-        blackScreenController.StartCoroutine(blackScreenController.ShowBlackScreen());
-
-        // Ждем 2 секунды перед выключением объявления
         yield return new WaitForSeconds(2f);
-
-        // Теперь скрываем объявление
         gameObject.SetActive(false);
+    }
+
+    void Update()
+    {
+        if (waitingForBlackScreen && Input.GetMouseButtonDown(0))
+        {
+            waitingForBlackScreen = false;
+            StartCoroutine(BlackScreenSequence());
+        }
     }
 }
