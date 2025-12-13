@@ -1634,6 +1634,10 @@ MonoBehaviour:
   mainBackgroundMusic: {fileID: 8300000, guid: 5695918f5f531af408f84289cde23515, type: 3}
   audioSource: {fileID: 0}
   backgroundMusicSource: {fileID: 185466283}
+  testMode: 0
+  testModeDelay: 1
+  waitAfterDialogues: 3
+  nextSceneName: 4Office
 --- !u!65 &185466280
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4288,7 +4292,7 @@ Transform:
   m_GameObject: {fileID: 559924418}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -19.865, y: 0, z: 15.728}
+  m_LocalPosition: {x: -19.93, y: 0, z: 15.73}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

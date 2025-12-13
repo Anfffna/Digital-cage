@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -43,12 +44,21 @@ public class ExitDoor : MonoBehaviour, IInteractable
     public AudioSource audioSource;
     public AudioSource backgroundMusicSource;
 
+    [Header("Test Mode")]
+    public bool testMode = false; // Включить режим тестирования
+    public float testModeDelay = 1f; // Задержка перед запуском теста
+
+    [Header("Scene Transition")]
+    public float waitAfterDialogues = 3f; // Ждать 3 секунды после диалогов
+    public string nextSceneName = "4Office"; // Имя следующей сцены
+
     private bool isOpen = false;
     private bool doorAutoOpened = false;
     private bool hasBeenInteracted = false;
     private bool shadowsStarted = false;
     private bool isExitDoorDialogueActive = false;
     private bool cameraDropped = false;
+    private bool allDialoguesCompleted = false;
     private Transform playerCamera;
     private Vector3 originalCameraLocalPosition;
 
@@ -88,6 +98,14 @@ public class ExitDoor : MonoBehaviour, IInteractable
         if (dialogueManager != null)
         {
             dialogueManager.OnDialogueIndexReached += OnGlobalDialogueIndexReached;
+        }
+
+        // === ТЕСТОВЫЙ РЕЖИМ ===
+        if (testMode)
+        {
+            Debug.Log("=== ТЕСТОВЫЙ РЕЖИМ АКТИВЕН ===");
+            Debug.Log("Дверь будет автоматически открыта и сразу начнется финальная последовательность");
+            StartCoroutine(TestModeSequence());
         }
     }
 
@@ -157,16 +175,11 @@ public class ExitDoor : MonoBehaviour, IInteractable
                 StartCameraDrop();
             }
 
-            // Включаем черный экран на ПОСЛЕДНЕЙ реплике (индекс 7)
-            if (lineIndex == 7)
+            // Проверяем, завершился ли диалог (последняя строка)
+            if (lineIndex >= afterCloseDialogueLines.Count)
             {
-                StartBlackScreen();
-            }
-
-            // Если диалог завершился - сбрасываем флаг
-            if (lineIndex >= afterCloseDialogueLines.Count - 1)
-            {
-                isExitDoorDialogueActive = false;
+                Debug.Log($"ExitDoor: Достигнут конец диалога (строка {lineIndex} из {afterCloseDialogueLines.Count})");
+                OnAllDialoguesFinished();
             }
         }
     }
@@ -219,7 +232,7 @@ public class ExitDoor : MonoBehaviour, IInteractable
         if (blackScreen != null)
         {
             StartCoroutine(FadeBlackScreen());
-            Debug.Log("ExitDoor: Запускаем черный экран на последней реплике!");
+            Debug.Log("ExitDoor: Запускаем черный экран после диалогов!");
         }
         else
         {
@@ -286,10 +299,21 @@ public class ExitDoor : MonoBehaviour, IInteractable
     private void OnFinalSequenceComplete()
     {
         Debug.Log("ExitDoor: ФИНАЛЬНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ ЗАВЕРШЕНА!");
-        // Здесь можно добавить:
-        // - SceneManager.LoadScene("NextScene");
-        // - Показ титров
-        // - Рестарт игры
+
+        // Запускаем переход на сцену через 2 секунды
+        StartCoroutine(LoadNextSceneAfterDelay(2f));
+    }
+
+    private IEnumerator LoadNextSceneAfterDelay(float delay)
+    {
+        Debug.Log($"ExitDoor: Ждем {delay} секунд перед переходом на сцену '{nextSceneName}'");
+
+        yield return new WaitForSeconds(delay);
+
+        Debug.Log($"ExitDoor: Переход на сцену '{nextSceneName}'...");
+
+        // Загружаем сцену
+        SceneManager.LoadScene(nextSceneName);
     }
 
     private void StartShadows()
@@ -405,13 +429,45 @@ public class ExitDoor : MonoBehaviour, IInteractable
         if (dialogueManager != null && afterCloseDialogueLines != null && afterCloseDialogueLines.Count > 0)
         {
             isExitDoorDialogueActive = true;
-            dialogueManager.StartDialogue(afterCloseDialogueLines);
+            // Запускаем диалог с callback на завершение
+            dialogueManager.StartDialogue(afterCloseDialogueLines, OnDialogueManagerComplete);
             Debug.Log("ExitDoor: Запущен диалог после захлопывания двери");
         }
         else
         {
             Debug.LogWarning("ExitDoor: DialogueManager или afterCloseDialogueLines не назначены!");
+            // Если нет диалогов, сразу переходим к финальной последовательности
+            OnAllDialoguesFinished();
         }
+    }
+
+    private void OnDialogueManagerComplete()
+    {
+        Debug.Log("ExitDoor: DialogueManager сообщил о завершении диалога");
+        OnAllDialoguesFinished();
+    }
+
+    private void OnAllDialoguesFinished()
+    {
+        if (allDialoguesCompleted) return; // Уже вызывали
+
+        allDialoguesCompleted = true;
+        isExitDoorDialogueActive = false;
+
+        Debug.Log($"ExitDoor: ВСЕ диалоги завершены! Ждем {waitAfterDialogues} секунд...");
+
+        // Ждем указанное время после диалогов
+        StartCoroutine(WaitAfterDialogues());
+    }
+
+    private IEnumerator WaitAfterDialogues()
+    {
+        yield return new WaitForSeconds(waitAfterDialogues);
+
+        Debug.Log("ExitDoor: Время ожидания после диалогов прошло, запускаем финальную последовательность");
+
+        // Теперь запускаем черный экран и финальную последовательность
+        StartBlackScreen();
     }
 
     private void PlaySound(AudioClip clip)
@@ -442,5 +498,84 @@ public class ExitDoor : MonoBehaviour, IInteractable
         {
             dialogueManager.OnDialogueIndexReached -= OnGlobalDialogueIndexReached;
         }
+    }
+
+    private IEnumerator TestModeSequence()
+    {
+        yield return new WaitForSeconds(testModeDelay);
+
+        // 1. Автоматически открываем дверь
+        doorAutoOpened = true;
+        isOpen = true;
+        isLocked = false;
+
+        if (doorAnimator != null)
+        {
+            doorAnimator.Play(openAnimationName);
+        }
+        Debug.Log("ТЕСТ: Дверь автоматически открыта");
+
+        // 2. Пропускаем диалоги и сразу запускаем финальную последовательность
+        hasBeenInteracted = true;
+
+        // 3. Запускаем фоную музыку
+        StartBackgroundMusic();
+
+        // 4. Показываем страшный туду
+        SwitchToScaryTodo();
+
+        // 5. Пропускаем все и сразу запускаем финальные эффекты
+        if (dialogueManager != null && afterCloseDialogueLines.Count > 0)
+        {
+            // Запускаем диалог, но сразу переходим к концу
+            isExitDoorDialogueActive = true;
+            dialogueManager.StartDialogue(afterCloseDialogueLines);
+
+            // Форсируем завершение диалогов
+            allDialoguesCompleted = true;
+
+            // Ждем немного
+            yield return new WaitForSeconds(1f);
+
+            // Запускаем тени
+            if (shadowExit != null && !shadowsStarted)
+            {
+                shadowsStarted = true;
+                shadowExit.StartShadows();
+            }
+
+            // Опускаем камеру
+            if (playerCamera != null && !cameraDropped)
+            {
+                StartCameraDrop();
+            }
+
+            // Ждем время после диалогов и запускаем черный экран
+            yield return new WaitForSeconds(waitAfterDialogues);
+
+            // Включаем черный экран
+            if (blackScreen != null)
+            {
+                StartCoroutine(FadeBlackScreen());
+            }
+        }
+        else
+        {
+            // Если нет диалога, просто запускаем финальные эффекты
+            if (playerCamera != null)
+            {
+                StartCameraDrop();
+            }
+
+            // Ждем время после диалогов
+            yield return new WaitForSeconds(waitAfterDialogues);
+
+            if (blackScreen != null)
+            {
+                StartCoroutine(FadeBlackScreen());
+            }
+        }
+
+        Debug.Log("ТЕСТ: Запущена финальная последовательность!");
     }
 }

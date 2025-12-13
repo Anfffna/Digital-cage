@@ -182,6 +182,7 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is DoorOpener) return;
         if (currentInteractable is TakePhone) return;
         if (currentInteractable is ChairSit) return;
+        if (currentInteractable is ChairSit4) return;
         if (currentInteractable is DialogueTriggerTerminal) return;
         if (currentInteractable is PhotoCapturePoint) return; // плашку не показываем
         if (currentInteractable is CorridorDoor) return;
