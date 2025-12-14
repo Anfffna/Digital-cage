@@ -147,6 +147,7 @@ public class InteractionController : MonoBehaviour
             // Белый курсор для: телефона, терминала, и PhotoCapturePoint с todoIndex 1 или 2
             if (currentInteractable is TakePhone ||
                 currentInteractable is DoorOpener ||
+                currentInteractable is DoorOpener4 ||
                 currentInteractable is PhotoHall1 ||
                 currentInteractable is PhotoHall2 ||
                 currentInteractable is PhotoHall3 ||
@@ -157,12 +158,14 @@ public class InteractionController : MonoBehaviour
                 currentInteractable is InteractableDoor ||
                 currentInteractable is CorridorDoor ||
                 currentInteractable is LightSwitch ||
+                currentInteractable is LightSwitch5 ||
                 currentInteractable is CarpetMovement ||
                 currentInteractable is DoorBasement ||
                 currentInteractable is ExitBasement ||
                 currentInteractable is ExitLock ||
                 currentInteractable is ExitDoor ||
                 currentInteractable is DoorExit0 ||
+                currentInteractable is DoorExit4 ||
                 currentInteractable is ShadowBasement ||
                 currentInteractable is GameMachine ||
                 currentInteractable is DialogueTriggerTerminal ||
@@ -180,6 +183,7 @@ public class InteractionController : MonoBehaviour
         // === Исключения: не показываем UI-плашку ===
         if (currentInteractable is DoorHoverDialogue) return;
         if (currentInteractable is DoorOpener) return;
+        if (currentInteractable is DoorOpener4) return;
         if (currentInteractable is TakePhone) return;
         if (currentInteractable is ChairSit) return;
         if (currentInteractable is ChairSit4) return;
@@ -194,6 +198,7 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is AdventDoor) return;
         if (currentInteractable is InteractableDoor) return;
         if (currentInteractable is LightSwitch) return;
+        if (currentInteractable is LightSwitch5) return;
         if (currentInteractable is CarpetMovement) return;
         if (currentInteractable is DoorBasement) return;
         if (currentInteractable is ExitBasement) return;
@@ -204,6 +209,7 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is Note) return;
         if (currentInteractable is Oferta) return;
         if (currentInteractable is DoorExit0) return;
+        if (currentInteractable is DoorExit4) return;
 
         // === Обычное поведение для остальных объектов ===
         if (interactionUI != null)
