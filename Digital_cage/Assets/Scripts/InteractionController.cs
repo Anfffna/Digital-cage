@@ -164,10 +164,14 @@ public class InteractionController : MonoBehaviour
                 currentInteractable is ExitBasement ||
                 currentInteractable is ExitLock ||
                 currentInteractable is ExitDoor ||
+                currentInteractable is ExitDoor5 ||
                 currentInteractable is DoorExit0 ||
                 currentInteractable is DoorExit4 ||
                 currentInteractable is ShadowBasement ||
                 currentInteractable is GameMachine ||
+                currentInteractable is Sleep ||
+                currentInteractable is Door6 ||
+                currentInteractable is SitWork ||
                 currentInteractable is DialogueTriggerTerminal ||
                 (currentInteractable is PhotoCapturePoint capturePoint &&
                  (capturePoint.todoIndex == 1 || capturePoint.todoIndex == 2)))
@@ -204,12 +208,16 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is ExitBasement) return;
         if (currentInteractable is ExitLock) return;
         if (currentInteractable is ExitDoor) return;
+        if (currentInteractable is ExitDoor5) return;
         if (currentInteractable is ShadowBasement) return;
         if (currentInteractable is GameMachine) return;
         if (currentInteractable is Note) return;
         if (currentInteractable is Oferta) return;
         if (currentInteractable is DoorExit0) return;
         if (currentInteractable is DoorExit4) return;
+        if (currentInteractable is Sleep) return;
+        if (currentInteractable is Door6) return;
+        if (currentInteractable is SitWork) return;
 
         // === Обычное поведение для остальных объектов ===
         if (interactionUI != null)

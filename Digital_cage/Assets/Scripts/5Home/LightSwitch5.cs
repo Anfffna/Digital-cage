@@ -14,12 +14,12 @@ public class LightSwitch5 : MonoBehaviour, IInteractable
 
     [Header("Light Settings")]
     public Light pointLight; // Ссылка на Point Light
-    public float lightFadeInDuration = 1.5f; // Время плавного включения света
-    public bool useLightFade = true; // Плавное включение или мгновенное
+    public float lightFadeOutDuration = 1.5f; // Время плавного выключения света
+    public bool useLightFade = true; // Плавное выключение или мгновенное
 
     [Header("Audio Settings")]
-    public AudioClip switchOnSound;
-    public AudioClip lightHumSound; // Дополнительный звук включения света
+    public AudioClip switchOffSound; // Звук выключения выключателя
+    public AudioClip lightOffSound; // Дополнительный звук выключения света
     public AudioSource audioSource;
 
     private bool isInteractable = false;
@@ -32,7 +32,7 @@ public class LightSwitch5 : MonoBehaviour, IInteractable
         gameObject.layer = LayerMask.NameToLayer("Interactable");
         SetInteractable(false);
 
-        // Настраиваем свет (если назначен)
+        // Настраиваем свет (если назначен) - ВКЛЮЧЕН изначально
         InitializeLight();
 
         // Настраиваем аудио
@@ -52,19 +52,27 @@ public class LightSwitch5 : MonoBehaviour, IInteractable
     {
         if (pointLight != null)
         {
-            // Сохраняем изначальную интенсивность, но выключаем свет
-            pointLight.enabled = false;
-            pointLight.intensity = 0f;
+            // Сохраняем изначальную интенсивность, свет ВКЛЮЧЕН
+            pointLight.enabled = true;
+
+            // Запоминаем оригинальную интенсивность (она должна быть настроена в инспекторе)
+            if (pointLight.intensity <= 0)
+            {
+                pointLight.intensity = 1f; // Дефолтное значение если не настроено
+                Debug.LogWarning("LightSwitch5: Интенсивность света была 0, установлено 1f");
+            }
 
             // Если в инспекторе не настроено, устанавливаем настройки по умолчанию
             if (pointLight.type != LightType.Point)
             {
                 Debug.LogWarning("LightSwitch5: Рекомендуется использовать Point Light!");
             }
+
+            Debug.Log("LightSwitch5: Свет изначально включен");
         }
         else
         {
-            Debug.LogWarning("LightSwitch5: Point Light не назначен! Свет не будет включаться.");
+            Debug.LogWarning("LightSwitch5: Point Light не назначен!");
         }
     }
 
@@ -111,17 +119,23 @@ public class LightSwitch5 : MonoBehaviour, IInteractable
 
         Debug.Log("LightSwitch5: Взаимодействие с выключателем");
 
-        // Включаем свет
-        TurnOnLight();
-
-        // Воспроизводим звук выключателя
-        if (switchOnSound != null && audioSource != null)
+        // 1. СРАЗУ зачеркиваем пункт в TodoUI5!
+        if (todoManager != null)
         {
-            audioSource.PlayOneShot(switchOnSound);
+            todoManager.CompleteLightTask(); // ? ЗДЕСЬ ПУНКТ ЗАЧЕРКИВАЕТСЯ!
         }
 
-        // Воспроизводим звук включения света (если есть)
-        if (lightHumSound != null && audioSource != null)
+        // 2. ВЫКЛЮЧАЕМ свет
+        TurnOffLight();
+
+        // 3. Воспроизводим звук выключателя
+        if (switchOffSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(switchOffSound);
+        }
+
+        // 4. Воспроизводим звук выключения света (если есть)
+        if (lightOffSound != null && audioSource != null)
         {
             // Запускаем с небольшой задержкой для натуральности
             StartCoroutine(PlayLightSoundDelayed(0.3f));
@@ -131,84 +145,68 @@ public class LightSwitch5 : MonoBehaviour, IInteractable
         hasBeenUsed = true;
         dialogueTriggered = true;
 
-        // Запускаем диалог если есть
+        // 5. Запускаем диалог если есть (УЖЕ ПОСЛЕ ЗАЧЕРКИВАНИЯ!)
         if (dialogueManager != null && dialogueLines != null && dialogueLines.Count > 0)
         {
             dialogueManager.StartDialogue(dialogueLines, OnDialogueEnd);
         }
         else
         {
-            CompleteTask();
+            // Если диалога нет, просто завершаем
+            dialogueTriggered = false;
         }
     }
 
-    private void TurnOnLight()
+    private void TurnOffLight()
     {
         if (pointLight == null) return;
 
-        if (useLightFade && lightFadeInDuration > 0)
+        if (useLightFade && lightFadeOutDuration > 0)
         {
-            // Плавное включение света
+            // Плавное выключение света
             if (lightFadeCoroutine != null)
                 StopCoroutine(lightFadeCoroutine);
 
-            lightFadeCoroutine = StartCoroutine(FadeInLight());
+            lightFadeCoroutine = StartCoroutine(FadeOutLight());
         }
         else
         {
-            // Мгновенное включение
-            pointLight.enabled = true;
-
-            // Если интенсивность была 0, устанавливаем разумное значение
-            if (pointLight.intensity <= 0)
-                pointLight.intensity = 1f;
+            // Мгновенное выключение
+            pointLight.enabled = false;
         }
 
-        Debug.Log("LightSwitch5: Свет включен");
+        Debug.Log("LightSwitch5: Свет выключен");
     }
 
-    private IEnumerator FadeInLight()
+    private IEnumerator FadeOutLight()
     {
-        pointLight.enabled = true;
-
-        float originalIntensity = pointLight.intensity;
-        if (originalIntensity <= 0) originalIntensity = 1f; // Дефолтное значение
+        float startIntensity = pointLight.intensity;
 
         float timer = 0f;
-        while (timer < lightFadeInDuration)
+        while (timer < lightFadeOutDuration)
         {
             timer += Time.deltaTime;
-            float progress = timer / lightFadeInDuration;
-            pointLight.intensity = Mathf.Lerp(0f, originalIntensity, progress);
+            float progress = timer / lightFadeOutDuration;
+            pointLight.intensity = Mathf.Lerp(startIntensity, 0f, progress);
             yield return null;
         }
 
-        pointLight.intensity = originalIntensity;
+        // После плавного уменьшения интенсивности выключаем свет полностью
+        pointLight.intensity = 0f;
+        pointLight.enabled = false;
     }
 
     private IEnumerator PlayLightSoundDelayed(float delay)
     {
         yield return new WaitForSeconds(delay);
-        audioSource.PlayOneShot(lightHumSound);
+        audioSource.PlayOneShot(lightOffSound);
     }
 
     private void OnDialogueEnd()
     {
-        CompleteTask();
+        // Диалог завершен, но пункт УЖЕ зачеркнут!
         dialogueTriggered = false;
-    }
-
-    private void CompleteTask()
-    {
-        if (todoManager != null)
-        {
-            todoManager.CompleteLightTask();
-            Debug.Log("LightSwitch5: Задача завершена в TodoUI5");
-        }
-        else
-        {
-            Debug.LogWarning("LightSwitch5: TodoUI5 не назначен!");
-        }
+        Debug.Log("LightSwitch5: Диалог завершен");
     }
 
     private void SetInteractable(bool interactable)
@@ -242,10 +240,10 @@ public class LightSwitch5 : MonoBehaviour, IInteractable
             Gizmos.color = Color.blue;
             Gizmos.DrawWireCube(transform.position, Vector3.one * 1.5f);
 
-            // Если есть свет, показываем его радиус
+            // Если есть свет, показываем его радиус (желтый - свет включен)
             if (pointLight != null && pointLight.type == LightType.Point)
             {
-                Gizmos.color = Color.yellow;
+                Gizmos.color = pointLight.enabled ? Color.yellow : Color.gray;
                 Gizmos.DrawWireSphere(pointLight.transform.position, pointLight.range);
             }
         }
@@ -254,29 +252,37 @@ public class LightSwitch5 : MonoBehaviour, IInteractable
             Gizmos.color = Color.gray;
             Gizmos.DrawWireCube(transform.position, Vector3.one * 1.3f);
 
-            // Подсветка включенного света
-            if (pointLight != null && pointLight.enabled)
+            // Если свет выключен после использования
+            if (pointLight != null && pointLight.type == LightType.Point)
             {
-                Gizmos.color = new Color(1f, 1f, 0.3f, 0.5f);
-                Gizmos.DrawWireSphere(pointLight.transform.position, pointLight.range);
+                Gizmos.color = Color.gray;
+                Gizmos.DrawWireSphere(pointLight.transform.position, pointLight.range * 0.5f); // Меньший радиус
             }
         }
         else
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireCube(transform.position, Vector3.one * 1.1f);
+
+            // Если свет включен но выключатель еще не активен
+            if (pointLight != null && pointLight.enabled)
+            {
+                Gizmos.color = new Color(1f, 0.5f, 0f, 0.7f); // Оранжевый
+                Gizmos.DrawWireSphere(pointLight.transform.position, pointLight.range * 0.7f);
+            }
         }
     }
 
-    // Опционально: метод для выключения света (если понадобится)
-    public void TurnOffLight()
+    // Опционально: метод для включения света (если понадобится)
+    public void TurnOnLight()
     {
         if (pointLight != null)
         {
             if (lightFadeCoroutine != null)
                 StopCoroutine(lightFadeCoroutine);
 
-            pointLight.enabled = false;
+            pointLight.enabled = true;
+            pointLight.intensity = 1f; // Восстанавливаем интенсивность
         }
     }
 }
