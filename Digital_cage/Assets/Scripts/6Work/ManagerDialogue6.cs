@@ -14,7 +14,7 @@ public class ManagerDialogue6 : MonoBehaviour
     public float typingSpeed = 0.05f;
 
     [Header("Todo Settings")]
-    public ToDoUI todoManager;
+    public TodoUI6 todoManager;
     public int showTodoAfterLine = 5;
 
     [Header("Dialogue Events")]
