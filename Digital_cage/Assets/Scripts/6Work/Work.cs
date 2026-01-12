@@ -38,6 +38,10 @@ public class Work : MonoBehaviour
     public float errorDisplayTime = 3f; // Время показа ошибки
     private Coroutine errorCoroutine;
 
+    [Header("External Scripts")]
+    public ErrorTalk errorTalkScript;
+    public SoundScary soundScaryScript;
+
     private CanvasGroup canvasGroup;
     private bool isShown = false;
     private Windows windowsScript;
@@ -264,12 +268,33 @@ public class Work : MonoBehaviour
             // Визуальная обратная связь
             HighlightCorrectButton(clickedButton, true);
 
-            // Переходим к следующему документу
-            StartCoroutine(MoveToNextDocumentWithDelay(0.5f));
+            // Воспроизводим звук и показываем диалог через SoundScary
+            // Звук запустится через 6 секунд сам по себе
+            if (soundScaryScript != null)
+            {
+                soundScaryScript.PlaySoundAndDialogue();
+            }
+            else
+            {
+                Debug.LogWarning("Work: SoundScary не назначен!");
+            }
+
+            // СРАЗУ переходим к следующему документу - НЕ ЖДЕМ!
+            StartCoroutine(MoveToNextDocumentWithDelay(0.5f)); // Только небольшая задержка для визуального эффекта
         }
         else
         {
             Debug.Log($"Work: Ошибка! Нажата {clickedButton}, нужно {currentDoc.correctButton}");
+
+            // Показываем диалог ошибки через ErrorTalk
+            if (errorTalkScript != null)
+            {
+                errorTalkScript.TriggerErrorDialogue();
+            }
+            else
+            {
+                Debug.LogWarning("Work: ErrorTalk не назначен!");
+            }
 
             // Показываем сообщение об ошибке
             ShowErrorMessage();
