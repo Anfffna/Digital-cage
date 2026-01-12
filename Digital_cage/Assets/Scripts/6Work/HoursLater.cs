@@ -181,27 +181,23 @@ public class HoursLater : MonoBehaviour
         {
             Debug.Log($"HoursLater: Запускаю диалог после 'Hours Later' ({afterHoursDialogue.Count} строк)");
 
-            // Отключаем триггер Todo для этого диалога (если в менеджере есть такая опция)
-            // Проверяем через рефлексию, есть ли поле disableTodoForThisDialogue
-            System.Reflection.FieldInfo todoField = dialogueManager.GetType().GetField("disableTodoForThisDialogue",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            // Запускаем диалог с коллбэком
+            dialogueManager.StartDialogue(afterHoursDialogue, StartSmsMamaSequence);
+        }
+    }
 
-            if (todoField != null)
-            {
-                bool originalValue = (bool)todoField.GetValue(dialogueManager);
-                todoField.SetValue(dialogueManager, true); // Отключаем Todo
-                dialogueManager.StartDialogue(afterHoursDialogue);
-                todoField.SetValue(dialogueManager, originalValue); // Восстанавливаем
-            }
-            else
-            {
-                // Просто запускаем диалог
-                dialogueManager.StartDialogue(afterHoursDialogue);
-            }
+    void StartSmsMamaSequence()
+    {
+        // Ищем SmsMama в сцене
+        SmsMama smsMama = FindObjectOfType<SmsMama>();
+        if (smsMama != null)
+        {
+            Debug.Log("HoursLater: Запускаю SmsMama последовательность");
+            smsMama.StartSmsSequence();
         }
         else
         {
-            Debug.LogWarning("HoursLater: Не могу запустить диалог - нет менеджера или строк диалога");
+            Debug.LogWarning("HoursLater: Не найден SmsMama в сцене!");
         }
     }
 
