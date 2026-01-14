@@ -7418,7 +7418,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shadowObject: {fileID: 1663763855}
-  moveSpeed: 60
+  moveSpeed: 56
   moveDistance: 10
   moveDirection: {x: -1, y: 0, z: -0.3}
   appearDuration: 0.5
