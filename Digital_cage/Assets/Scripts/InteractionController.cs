@@ -171,6 +171,7 @@ public class InteractionController : MonoBehaviour
                 currentInteractable is GameMachine ||
                 currentInteractable is Sleep ||
                 currentInteractable is Door6 ||
+                currentInteractable is ExitDoorMama6 ||
                 currentInteractable is SitWork ||
                 currentInteractable is DialogueTriggerTerminal ||
                 (currentInteractable is PhotoCapturePoint capturePoint &&
@@ -218,6 +219,7 @@ public class InteractionController : MonoBehaviour
         if (currentInteractable is Sleep) return;
         if (currentInteractable is Door6) return;
         if (currentInteractable is SitWork) return;
+        if (currentInteractable is ExitDoorMama6) return;
 
         // === Обычное поведение для остальных объектов ===
         if (interactionUI != null)

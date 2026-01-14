@@ -16,6 +16,12 @@ public class SmsMama : MonoBehaviour
     public string handUpTrigger = "HandUp";
     public string handDownTrigger = "HandDown";
 
+    [Header("Camera Zoom Settings")]
+    public Camera playerCamera;
+    public float zoomAmount = 2f;
+    public float zoomDuration = 1f;
+    public AnimationCurve zoomCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
     [Header("Dialogue Settings")]
     public ManagerDialogue6 dialogueManager;
 
@@ -34,36 +40,37 @@ public class SmsMama : MonoBehaviour
     private bool handUpTriggered = false;
     private bool handDownTriggered = false;
     private Coroutine activationCoroutine;
+    private Coroutine zoomCoroutine;
+    private float originalFOV;
+    private Transform cameraTransform;
+    private Vector3 originalCameraPosition;
 
     void Start()
     {
+        // Находим ссылки если не назначены
         if (hoursLaterScript == null)
-        {
             hoursLaterScript = FindObjectOfType<HoursLater>();
-        }
 
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.playOnAwake = false;
-            audioSource.loop = true;
+            audioSource.loop = false;
         }
 
         if (handAnimator == null)
-        {
             Debug.LogWarning("SmsMama: Не назначен Animator для руки!");
-        }
 
         if (dialogueManager == null)
-        {
             dialogueManager = FindObjectOfType<ManagerDialogue6>();
-        }
 
         if (dialogueLines == null || dialogueLines.Count == 0)
-        {
             Debug.LogWarning("SmsMama: Не настроены строки диалога!");
-        }
 
+        // Настраиваем камеру
+        SetupCamera();
+
+        // Сброс состояния
         hasTriggered = false;
         handUpTriggered = false;
         handDownTriggered = false;
@@ -71,22 +78,40 @@ public class SmsMama : MonoBehaviour
         Debug.Log("SmsMama: Инициализирован");
     }
 
+    void SetupCamera()
+    {
+        if (playerCamera == null)
+        {
+            playerCamera = Camera.main;
+            if (playerCamera == null)
+            {
+                playerCamera = FindObjectOfType<Camera>();
+                Debug.LogWarning("SmsMama: Камера не найдена автоматически!");
+            }
+        }
+
+        if (playerCamera != null)
+        {
+            originalFOV = playerCamera.fieldOfView;
+            cameraTransform = playerCamera.transform;
+            originalCameraPosition = cameraTransform.localPosition;
+            Debug.Log($"SmsMama: Камера настроена. FOV: {originalFOV}");
+        }
+    }
+
     public void StartSmsSequence()
     {
-        Debug.Log("=== SmsMama.StartSmsSequence() ВЫЗВАН ===");
-
         if (hasTriggered)
         {
             Debug.Log("SmsMama: Уже срабатывал ранее, пропускаем");
             return;
         }
 
+        Debug.Log("=== SmsMama.StartSmsSequence() ВЫЗВАН ===");
         hasTriggered = true;
 
         if (activationCoroutine != null)
-        {
             StopCoroutine(activationCoroutine);
-        }
 
         activationCoroutine = StartCoroutine(SmsSequence());
     }
@@ -95,59 +120,55 @@ public class SmsMama : MonoBehaviour
     {
         Debug.Log("SmsMama: Начинаю SMS последовательность...");
 
-        // 1. Ждем 3 секунды после завершения диалога HoursLater
+        // 1. Ждем паузу после предыдущего диалога
         yield return new WaitForSeconds(delayAfterHoursDialogue);
 
-        // 2. НАЧИНАЕМ ЗВОНОК ТЕЛЕФОНА
+        // 2. Начинаем звонок телефона
         StartPhoneRinging();
 
-        // 3. Ждем 2 секунды перед тем как взять трубку
+        // 3. Ждем перед взятием трубки
         yield return new WaitForSeconds(2f);
 
-        // 4. ПОДНИМАЕМ РУКУ (БЕРЕМ ТРУБКУ)
+        // 4. Поднимаем руку (берем трубку)
         Debug.Log("SmsMama: Поднимаем руку (берем трубку)...");
 
         if (delayBeforeHandUp > 0)
-        {
             yield return new WaitForSeconds(delayBeforeHandUp);
-        }
 
         if (handAnimator != null && !string.IsNullOrEmpty(handUpTrigger))
         {
             Debug.Log($"SmsMama: Триггерим анимацию '{handUpTrigger}'");
             handAnimator.SetTrigger(handUpTrigger);
             handUpTriggered = true;
+
+            // Запускаем плавный зум камеры
+            StartCameraZoomIn();
         }
 
         if (delayAfterHandUp > 0)
-        {
             yield return new WaitForSeconds(delayAfterHandUp);
-        }
 
-        // 5. ЗАПУСКАЕМ ДИАЛОГ
+        // 5. Запускаем диалог
         if (dialogueLines != null && dialogueLines.Count > 0 && dialogueManager != null)
         {
             Debug.Log($"SmsMama: Запускаем диалог ({dialogueLines.Count} строк, опускание ПОСЛЕ строки {handDownLineIndex})");
 
-            // ОТКЛЮЧАЕМ TODO ПАНЕЛЬ
+            // Отключаем TODO панель
             if (disableTodoPanel)
-            {
                 DisableTodoPanel();
-            }
 
-            // ПОДПИСЫВАЕМСЯ НА СОБЫТИЕ ПЕРЕД ЗАПУСКОМ ДИАЛОГА
+            // Подписываемся на события диалога
             SubscribeToDialogueEvents();
 
             // Запускаем диалог
             dialogueManager.StartDialogue(dialogueLines);
 
-            // ЗАПУСКАЕМ КОРУТИНУ ДЛЯ СЛЕДКИ ЗАВЕРШЕНИЯ ДИАЛОГА
+            // Запускаем корутину для слежения за завершением диалога
             StartCoroutine(WaitForDialogueCompletion());
         }
         else
         {
             Debug.LogWarning("SmsMama: Не могу запустить диалог!");
-
             yield return new WaitForSeconds(3f);
             StartCoroutine(TriggerHandDown());
         }
@@ -156,8 +177,6 @@ public class SmsMama : MonoBehaviour
     void SubscribeToDialogueEvents()
     {
         Debug.Log("SmsMama: Подписываюсь на OnDialogueIndexReached");
-
-        // ПРЯМАЯ ПОДПИСКА НА СОБЫТИЕ
         dialogueManager.OnDialogueIndexReached += OnDialogueLineChanged;
     }
 
@@ -174,14 +193,11 @@ public class SmsMama : MonoBehaviour
     {
         Debug.Log($"SmsMama: OnDialogueLineChanged вызван! Строка: {lineIndex}");
 
-        // В ManagerDialogue6 currentLineIndex начинается с 1
         // Проверяем, достигли ли мы строки для опускания руки
         if (lineIndex >= handDownLineIndex && !handDownTriggered && handUpTriggered)
         {
             Debug.Log($"SmsMama: Опускаю руку! Текущая строка: {lineIndex}, цель: {handDownLineIndex}");
             StartCoroutine(TriggerHandDown());
-
-            // Отписываемся от события
             UnsubscribeFromDialogueEvents();
         }
     }
@@ -190,22 +206,17 @@ public class SmsMama : MonoBehaviour
     {
         Debug.Log("SmsMama: Жду завершения диалога...");
 
-        // Ждем пока диалог активен
         while (IsDialogueActive())
-        {
             yield return null;
-        }
 
         Debug.Log("SmsMama: Диалог завершен");
 
-        // Если рука все еще не опущена - опускаем
         if (!handDownTriggered && handUpTriggered)
         {
             Debug.Log("SmsMama: Диалог завершился, а рука не опущена. Опускаю...");
             StartCoroutine(TriggerHandDown());
         }
 
-        // Отписываемся на всякий случай
         UnsubscribeFromDialogueEvents();
     }
 
@@ -221,7 +232,6 @@ public class SmsMama : MonoBehaviour
     {
         try
         {
-            // Просто устанавливаем showTodoAfterLine в очень большое число
             dialogueManager.showTodoAfterLine = 999;
             Debug.Log("SmsMama: Todo панель отключена (showTodoAfterLine = 999)");
         }
@@ -245,9 +255,7 @@ public class SmsMama : MonoBehaviour
     private void StopPhoneRinging()
     {
         if (audioSource != null && audioSource.isPlaying)
-        {
             audioSource.Stop();
-        }
     }
 
     IEnumerator TriggerHandDown()
@@ -270,8 +278,14 @@ public class SmsMama : MonoBehaviour
             Debug.Log($"SmsMama: Триггерим анимацию '{handDownTrigger}'");
             handAnimator.SetTrigger(handDownTrigger);
 
+            // Запускаем отмену зума камеры
+            StartCameraZoomOut();
+
             // Останавливаем звонок
             StopPhoneRinging();
+
+            // ПОКАЗЫВАЕМ ВТОРОЙ ПУНКТ TODO
+            ShowTodoTask2();
 
             Debug.Log("SmsMama: Рука опущена");
             yield return new WaitForSeconds(1f);
@@ -284,13 +298,101 @@ public class SmsMama : MonoBehaviour
         }
     }
 
+    // Новый метод для показа второго пункта Todo
+    private void ShowTodoTask2()
+    {
+        // Находим TodoUI6 в сцене
+        TodoUI6 todoUI = FindObjectOfType<TodoUI6>();
+        if (todoUI != null)
+        {
+            Debug.Log("SmsMama: Показываю второй пункт Todo");
+            todoUI.ShowTask2Only(); // Метод остается прежним
+        }
+        else
+        {
+            Debug.LogWarning("SmsMama: Не найден TodoUI6 для показа второго пункта!");
+        }
+    }
+
+    // Плавный зум камеры (приближение)
+    void StartCameraZoomIn()
+    {
+        if (playerCamera == null || zoomCoroutine != null)
+            return;
+
+        zoomCoroutine = StartCoroutine(ZoomCamera(true));
+    }
+
+    // Плавный возврат камеры в исходное состояние
+    void StartCameraZoomOut()
+    {
+        if (playerCamera == null)
+            return;
+
+        if (zoomCoroutine != null)
+            StopCoroutine(zoomCoroutine);
+
+        zoomCoroutine = StartCoroutine(ZoomCamera(false));
+    }
+
+    IEnumerator ZoomCamera(bool zoomIn)
+    {
+        if (playerCamera == null) yield break;
+
+        float startTime = Time.time;
+        float endTime = startTime + zoomDuration;
+
+        float startFOV = playerCamera.fieldOfView;
+        Vector3 startPosition = cameraTransform.localPosition;
+
+        // Рассчитываем целевую позицию и FOV
+        float targetFOV;
+        Vector3 targetPosition;
+
+        if (zoomIn)
+        {
+            // Уменьшаем FOV для эффекта зума
+            targetFOV = originalFOV / zoomAmount;
+
+            // Слегка сдвигаем камеру вперед в направлении взгляда
+            targetPosition = originalCameraPosition + cameraTransform.forward * 0.3f;
+        }
+        else
+        {
+            // Возвращаем к исходным значениям
+            targetFOV = originalFOV;
+            targetPosition = originalCameraPosition;
+        }
+
+        Debug.Log($"SmsMama: Начинаю {(zoomIn ? "приближение" : "отдаление")} камеры. FOV: {startFOV} -> {targetFOV}");
+
+        while (Time.time < endTime)
+        {
+            float t = (Time.time - startTime) / zoomDuration;
+            float curvedT = zoomCurve.Evaluate(t);
+
+            // Плавно изменяем FOV
+            playerCamera.fieldOfView = Mathf.Lerp(startFOV, targetFOV, curvedT);
+
+            // Плавно изменяем позицию камеры
+            cameraTransform.localPosition = Vector3.Lerp(startPosition, targetPosition, curvedT);
+
+            yield return null;
+        }
+
+        // Гарантируем точные конечные значения
+        playerCamera.fieldOfView = targetFOV;
+        cameraTransform.localPosition = targetPosition;
+
+        Debug.Log($"SmsMama: Зум камеры завершен. Текущий FOV: {playerCamera.fieldOfView}");
+        zoomCoroutine = null;
+    }
+
     [ContextMenu("Тест: Запустить SMS")]
     public void TestStartSmsSequence()
     {
         if (!hasTriggered)
-        {
             StartSmsSequence();
-        }
     }
 
     [ContextMenu("Тест: Опустить руку")]
@@ -311,8 +413,19 @@ public class SmsMama : MonoBehaviour
         handDownTriggered = false;
 
         if (activationCoroutine != null)
-        {
             StopCoroutine(activationCoroutine);
+
+        if (zoomCoroutine != null)
+        {
+            StopCoroutine(zoomCoroutine);
+            zoomCoroutine = null;
+        }
+
+        // Восстанавливаем камеру
+        if (playerCamera != null)
+        {
+            playerCamera.fieldOfView = originalFOV;
+            cameraTransform.localPosition = originalCameraPosition;
         }
 
         UnsubscribeFromDialogueEvents();
@@ -327,8 +440,9 @@ public class SmsMama : MonoBehaviour
         UnsubscribeFromDialogueEvents();
 
         if (activationCoroutine != null)
-        {
             StopCoroutine(activationCoroutine);
-        }
+
+        if (zoomCoroutine != null)
+            StopCoroutine(zoomCoroutine);
     }
 }

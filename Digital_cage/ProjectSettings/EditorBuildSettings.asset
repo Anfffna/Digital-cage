@@ -29,4 +29,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/6Work.unity
     guid: 5067a86512e265e4bae0a2fe21a94fa2
+  - enabled: 1
+    path: Assets/Scenes/7Mama.unity
+    guid: 878e16bfb4fc5bd4aa0eba71e6495b45
   m_configObjects: {}
