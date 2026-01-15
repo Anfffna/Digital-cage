@@ -17,6 +17,7 @@ public class DoorsClose : MonoBehaviour
     public AudioSource audioSource;            // Для звуков
     public AudioClip doorInteractSound;        // Общий звук для всех дверей
     public AudioClip specialDoorSound;         // Звук для особенной двери
+    public AudioClip teleportAmbientSound;     // Звук после телепортации
 
     [Header("Special Door Dialogue")]
     public ManagerDialogue7 dialogueManager;   // Диалог для особенной двери
@@ -189,6 +190,9 @@ public class DoorsClose : MonoBehaviour
         Debug.Log("DoorsClose: Телепортирую игрока...");
         TeleportPlayer();
 
+        // ПРЯМО ПЕРЕД ТЕЛЕПОРТАЦИЕЙ - ОТКЛЮЧАЕМ ТУДО ПАНЕЛЬ
+        HideTodoPanelPermanently();
+
         // Ждем 2 секунды на черном экране
         yield return new WaitForSeconds(2f);
 
@@ -198,6 +202,25 @@ public class DoorsClose : MonoBehaviour
 
         isTeleporting = false;
         Debug.Log("DoorsClose: Телепортация завершена");
+    }
+
+    void HideTodoPanelPermanently()
+    {
+        // Находим TodoUI7 в сцене
+        TodoUI7 todoUI = FindObjectOfType<TodoUI7>();
+        if (todoUI != null)
+        {
+            // Отключаем плашку навсегда
+            todoUI.HidePanel();
+            Debug.Log("DoorsClose: Todo панель скрыта навсегда");
+
+            // Если нужно полностью деактивировать TodoUI
+            // todoUI.gameObject.SetActive(false);
+        }
+        else
+        {
+            Debug.LogWarning("DoorsClose: TodoUI7 не найден в сцене");
+        }
     }
 
     IEnumerator FadeBlackScreen(float fromAlpha, float toAlpha, float duration)
@@ -254,8 +277,46 @@ public class DoorsClose : MonoBehaviour
 
         Debug.Log($"DoorsClose: Игрок телепортирован в {teleportDestination.position}");
 
+        // ЗАПУСКАЕМ ЗВУК ПОСЛЕ ТЕЛЕПОРТАЦИИ (когда игрок уже на точке)
+        PlayTeleportAmbientSound();
+
         // Включаем управление обратно
         StartCoroutine(ReenablePlayerComponents(player, playerComponents));
+    }
+
+    /// <summary>
+    /// Запустить цикличный звук после телепортации
+    /// </summary>
+    public void PlayTeleportAmbientSound()
+    {
+        if (audioSource != null && teleportAmbientSound != null)
+        {
+            audioSource.loop = true; // Делаем зацикленным
+
+            // СОХРАНЯЕМ ПРЕЖНЮЮ ГРОМКОСТЬ
+            float previousVolume = audioSource.volume;
+
+            audioSource.volume = 0.01f; // <-- УСТАНАВЛИВАЕМ НИЗКУЮ ГРОМКОСТЬ
+            audioSource.clip = teleportAmbientSound;
+            audioSource.Play();
+            Debug.Log("DoorsClose: Запущен цикличный звук после телепортации (громкость: 0.01)");
+
+            // Восстановить прежнюю громкость при остановке
+            // Или сохранить предыдущую громкость в переменной класса
+        }
+    }
+
+    /// <summary>
+    /// Остановить звук телепортации
+    /// </summary>
+    public void StopTeleportAmbientSound()
+    {
+        if (audioSource != null && audioSource.isPlaying && audioSource.clip == teleportAmbientSound)
+        {
+            audioSource.loop = false; // Отключаем зацикливание
+            audioSource.Stop();
+            Debug.Log("DoorsClose: Цикличный звук телепортации остановлен");
+        }
     }
 
     IEnumerator ReenablePlayerComponents(GameObject player, MonoBehaviour[] components)

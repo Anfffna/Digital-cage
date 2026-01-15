@@ -8,6 +8,12 @@ public class DoorOpener : MonoBehaviour, IInteractable
     public string boolName = "isOpen";
     public float closeDelay = 2f;
 
+    [Header("Audio Settings")]
+    public AudioSource audioSource;          // Аудиоисточник
+    public AudioClip doorOpenSound;          // Звук открытия двери
+    public AudioClip doorCloseSound;         // Звук закрытия двери
+    public float soundDelay = 0.1f;          // Задержка звука после анимации
+
     [Header("Player Blocker Settings")]
     public Collider playerBlocker;      // Невидимая стена
     public Collider vnuTrigger;         // Внутренний триггер, когда игрок достигнет его, блокер станет настоящей стеной
@@ -18,6 +24,17 @@ public class DoorOpener : MonoBehaviour, IInteractable
 
     void Start()
     {
+        // Автоматически находим AudioSource если не назначен
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+            }
+        }
+
         if (playerBlocker != null)
             playerBlocker.isTrigger = true; // Изначально пропускаем игрока
     }
@@ -40,8 +57,16 @@ public class DoorOpener : MonoBehaviour, IInteractable
         if (animator != null)
             animator.SetBool(boolName, isOpen);
 
+        // Проигрываем звук в зависимости от действия
         if (isOpen)
+        {
+            PlayDoorOpenSound();
             StartCoroutine(CloseDoorWithDelay());
+        }
+        else
+        {
+            PlayDoorCloseSound();
+        }
     }
 
     public string GetInteractionText()
@@ -51,10 +76,38 @@ public class DoorOpener : MonoBehaviour, IInteractable
 
     IEnumerator CloseDoorWithDelay()
     {
-        yield return new WaitForSeconds(closeDelay);
+        yield return new WaitForSeconds(closeDelay - soundDelay); // Вычитаем задержку звука
+
+        // Проигрываем звук закрытия перед самой анимацией
+        PlayDoorCloseSound();
+
+        yield return new WaitForSeconds(soundDelay);
+
         isOpen = false;
         if (animator != null)
             animator.SetBool(boolName, isOpen);
+    }
+
+    private void PlayDoorOpenSound()
+    {
+        if (audioSource != null && doorOpenSound != null)
+        {
+            StartCoroutine(PlaySoundWithDelay(doorOpenSound, soundDelay));
+        }
+    }
+
+    private void PlayDoorCloseSound()
+    {
+        if (audioSource != null && doorCloseSound != null)
+        {
+            StartCoroutine(PlaySoundWithDelay(doorCloseSound, soundDelay));
+        }
+    }
+
+    IEnumerator PlaySoundWithDelay(AudioClip clip, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        audioSource.PlayOneShot(clip);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -63,12 +116,3 @@ public class DoorOpener : MonoBehaviour, IInteractable
             playerEntered = true;
     }
 }
-
-
-
-
-
-
-
-
-

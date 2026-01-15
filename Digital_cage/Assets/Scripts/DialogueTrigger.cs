@@ -19,7 +19,25 @@ public class DialogueTrigger : MonoBehaviour
     [Header("Dialogue Trigger 2 Reference")]
     public DialogueTrigger2 dialogueTrigger2;
 
+    [Header("Audio Settings")]
+    public AudioSource audioSource;        // Аудиоисточник
+    public AudioClip triggerSound;         // Звук при активации триггера
+
     private bool triggered = false;
+
+    void Start()
+    {
+        // Автоматическое создание AudioSource если нет
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+            }
+        }
+    }
 
     void OnTriggerEnter(Collider other)
     {
@@ -27,9 +45,21 @@ public class DialogueTrigger : MonoBehaviour
         {
             triggered = true;
 
+            // Проигрываем звук при активации
+            PlayTriggerSound();
+
             // Первая часть диалога до continueFromLine
             List<string> firstPart = dialogueLines.GetRange(0, continueFromLine);
             dialogueManager.StartDialogue(firstPart, OnDialogueLineFinished, true);
+        }
+    }
+
+    private void PlayTriggerSound()
+    {
+        if (audioSource != null && triggerSound != null)
+        {
+            audioSource.PlayOneShot(triggerSound);
+            Debug.Log("DialogueTrigger: Звук активации проигран");
         }
     }
 

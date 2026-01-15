@@ -32,4 +32,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/7Mama.unity
     guid: 878e16bfb4fc5bd4aa0eba71e6495b45
+  - enabled: 1
+    path: Assets/Scenes/8CutsScene.unity
+    guid: 7ff629cbb0dade44abf6240957dbe2b4
   m_configObjects: {}

@@ -15,7 +15,7 @@ public class ManagerDialogue7 : MonoBehaviour
 
     [Header("Todo Settings")]
     public TodoUI7 todoManager;
-    public int showTodoAfterLine = 5;
+    public int showTodoAfterLine = 5; // После какой строки показывать туду (например, после 2-й строки = 2)
 
     [Header("Dialogue Events")]
     public System.Action<int> OnDialogueIndexReached;
@@ -26,6 +26,9 @@ public class ManagerDialogue7 : MonoBehaviour
     private bool isTyping = false;
     private System.Action onDialogueEndCallback;
     private int currentLineIndex = 0;
+
+    // Флаги для отслеживания состояния
+    private bool todoTriggerCalled = false; // Был ли уже вызван триггер для туду
 
     void Awake()
     {
@@ -44,12 +47,14 @@ public class ManagerDialogue7 : MonoBehaviour
     {
         Debug.Log($"ManagerDialogue7: StartDialogue вызван, строк: {dialogueLines?.Count}");
 
+        // Сброс всех состояний при начале нового диалога
+        ResetDialogueState();
+
         if (lines == null)
         {
             lines = new Queue<string>();
         }
 
-        currentLineIndex = 0;
         lines.Clear();
 
         foreach (string line in dialogueLines)
@@ -61,6 +66,20 @@ public class ManagerDialogue7 : MonoBehaviour
         onDialogueEndCallback = onEndCallback;
 
         DisplayNextLine();
+    }
+
+    private void ResetDialogueState()
+    {
+        currentLineIndex = 0;
+        todoTriggerCalled = false;
+
+        if (typingCoroutine != null)
+        {
+            StopCoroutine(typingCoroutine);
+            typingCoroutine = null;
+        }
+
+        isTyping = false;
     }
 
     void Update()
@@ -115,7 +134,11 @@ public class ManagerDialogue7 : MonoBehaviour
 
         OnDialogueIndexReached?.Invoke(currentLineIndex);
 
-        CheckForTodoTrigger();
+        // Вызываем триггер для туду ТОЛЬКО если он еще не был вызван
+        if (!todoTriggerCalled && currentLineIndex == showTodoAfterLine)
+        {
+            TriggerTodoShow();
+        }
 
         if (typingCoroutine != null)
             StopCoroutine(typingCoroutine);
@@ -124,14 +147,31 @@ public class ManagerDialogue7 : MonoBehaviour
     }
 
     // -------------------------------
-    //   CHECK TODO LIST TRIGGER
+    //   TRIGGER TODO SHOW (ОДНОРАЗОВО)
     // -------------------------------
-    private void CheckForTodoTrigger()
+    private void TriggerTodoShow()
     {
-        if (currentLineIndex == showTodoAfterLine + 1 && todoManager != null)
+        // Помечаем, что триггер уже сработал
+        todoTriggerCalled = true;
+
+        if (todoManager != null)
         {
-            Debug.Log($"ManagerDialogue7: Показываем Todo список после строки {showTodoAfterLine}");
-            todoManager.ShowPanel();
+            Debug.Log($"ManagerDialogue7: Пытаюсь показать Todo после строки {showTodoAfterLine}");
+
+            // Проверяем можно ли показать туду
+            if (todoManager.CanShowPanel())
+            {
+                todoManager.ShowPanel();
+                Debug.Log($"ManagerDialogue7: Todo показано успешно");
+            }
+            else
+            {
+                Debug.Log($"ManagerDialogue7: Todo нельзя показать (уже скрыто или не настроено)");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("ManagerDialogue7: todoManager не назначен!");
         }
     }
 
@@ -194,6 +234,8 @@ public class ManagerDialogue7 : MonoBehaviour
 
         onDialogueEndCallback?.Invoke();
         onDialogueEndCallback = null;
+
+        Debug.Log("ManagerDialogue7: Диалог завершен");
     }
 
     public void ForceEndDialogue()
@@ -208,6 +250,8 @@ public class ManagerDialogue7 : MonoBehaviour
             dialoguePanel.SetActive(false);
 
         onDialogueEndCallback = null;
+
+        Debug.Log("ManagerDialogue7: Диалог принудительно завершен");
     }
 
     private void UpdateTextLayout()
@@ -218,5 +262,25 @@ public class ManagerDialogue7 : MonoBehaviour
 
         if (dialoguePanel != null)
             LayoutRebuilder.ForceRebuildLayoutImmediate(dialoguePanel.GetComponent<RectTransform>());
+    }
+
+    // -------------------------------
+    //        PUBLIC METHODS
+    // -------------------------------
+
+    /// <summary>
+    /// Пропустить диалог
+    /// </summary>
+    public void SkipDialogue()
+    {
+        ForceEndDialogue();
+    }
+
+    /// <summary>
+    /// Проверить, идет ли сейчас диалог
+    /// </summary>
+    public bool IsDialogueActive()
+    {
+        return dialoguePanel != null && dialoguePanel.activeSelf;
     }
 }
