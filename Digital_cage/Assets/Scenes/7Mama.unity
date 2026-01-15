@@ -416,11 +416,11 @@ MonoBehaviour:
   walkFootstepSounds:
   - {fileID: 8300000, guid: 0e715fb69e9c49743b387d074bf3c4c8, type: 3}
   footstepDelayWalk: 0.6
-  walkVolume: 0.65
+  walkVolume: 0.7
   runFootstepSounds:
   - {fileID: 8300000, guid: 0e715fb69e9c49743b387d074bf3c4c8, type: 3}
   footstepDelayRun: 0.36
-  runVolume: 0.65
+  runVolume: 0.7
   footstepAudioSource: {fileID: 161479494}
   restrictHorizontalLook: 0
   minSitY: -90
@@ -1382,7 +1382,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 0.1
+  m_Volume: 0.15
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -7961,7 +7961,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 0.4
+  m_Volume: 0.19
   m_Pitch: 1
   Loop: 0
   Mute: 0

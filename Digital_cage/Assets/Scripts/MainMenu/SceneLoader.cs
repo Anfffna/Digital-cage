@@ -12,6 +12,9 @@ public class SceneLoader : MonoBehaviour
     public GameObject settingsPanel; // Ссылка на панель настроек
     public float animationDuration = 0.3f; // Длительность анимации
 
+    [Header("Download Panel Reference")]
+    public DownloadManager downloadManager; // Ссылка на менеджер загрузок
+
     private string currentSceneName;
     private bool isSettingsOpen = false;
     private bool isAnimating = false;
@@ -56,6 +59,16 @@ public class SceneLoader : MonoBehaviour
         {
             CloseSettings();
         }
+
+        // Обработка закрытия DownloadPanel по ESC (опционально)
+        if (downloadManager != null && Input.GetKeyDown(KeyCode.Escape))
+        {
+            // Проверяем, открыта ли DownloadPanel и не идет ли анимация
+            if (downloadManager.IsDownloadOpen && !downloadManager.IsAnimating)
+            {
+                downloadManager.CloseDownloadPanel();
+            }
+        }
     }
 
     void OnSceneChanged(Scene previousScene, Scene newScene)
@@ -66,7 +79,7 @@ public class SceneLoader : MonoBehaviour
             audioSource.Stop();
         }
 
-        // Запускаем музыку при входе в главное меню
+        // Запускаем музыку при входе в главном меню
         if (newScene.name == "MainMenu")
         {
             PlayMainMenuMusic();
