@@ -1,217 +1,197 @@
-Digital Cage
+# Digital Cage  
+*Narrative Psychological Horror Game Prototype*
 
-Narrative Psychological Horror Game Prototype
+---
 
-General Information
+## General Information
 
-Project Name: Digital Cage
-Genre: Psychological Horror / Narrative Horror
-Platform: PC (Windows)
-Engine: Unity 2022
-Programming Language: C#
-Perspective: First-person
-Gameplay Duration: ~1 hour
-Project Type: Solo student project
+**Project Name:** Digital Cage  
+**Genre:** Psychological Horror / Narrative Horror  
+**Platform:** PC (Windows)  
+**Engine:** Unity  
+**Programming Language:** C#  
+**Camera Perspective:** First-person  
+**Gameplay Duration:** ~1.5 hour  
+**Project Type:** Solo student project  
 
-Project Goal:
-To create a narrative-driven psychological horror experience without jump scares, focused on tension, repetition, loss of identity, and the feeling of being trapped.
+**Project Goal:**  
+To develop a narrative-driven psychological horror game prototype focused on tension, atmosphere, and loss of control, without the use of jump scares.
 
-High Concept
+---
 
-The player participates in an experimental test that initially appears to be a virtual simulation.
-Over time, the environment begins to behave incorrectly: familiar spaces change, dialogues become fragmented, and the sense of control fades.
+## High Concept
 
-Escape seems possible — until it becomes clear that not everyone is meant to leave.
+The player takes part in a digital experiment that initially appears controlled and harmless.  
+As the experience progresses, the environment begins to malfunction: familiar locations subtly change, instructions contradict each other, and the sense of reality becomes unstable.
 
-Core Themes and Mood
-Themes
+What seems like a test slowly turns into a psychological trap.
 
-Loss of identity
+---
 
-Repetition and loops
+## Core Themes and Mood
 
-Psychological control
+### Themes
+- Loss of identity  
+- Repetition and loops  
+- Psychological pressure  
+- Illusion of control  
+- Dehumanization  
 
-Devaluation of individuality
+### Mood
+- Constant low-level tension  
+- Growing unease and distrust  
+- False sense of safety  
+- Gradual psychological discomfort  
 
-Illusion of choice
+The game avoids direct scares, relying instead on sustained emotional pressure.
 
-Mood
+---
 
-Constant low-level tension
+## Core Gameplay Loop
 
-Gradual feeling that “something is wrong”
+1. Exploration of the environment  
+2. Interaction with objects  
+3. Dialogue and internal monologue fragments  
+4. Attempt to progress or escape  
+5. Partial reset or transition  
 
-False sense of safety
+Each repetition introduces subtle changes to reinforce tension.
 
-Temporary relief followed by unease
+---
 
-The game avoids direct scares and instead applies sustained psychological pressure.
+## Game Mechanics
 
-Core Gameplay Loop
+### Core Mechanics
+- First-person movement  
+- Camera look  
+- Environmental interaction  
+- Dialogue system with typing effect  
+- Task list used as a narrative tool  
 
-Exploration of the environment
+### Secondary Mechanics
+- Visual glitches  
+- Audio distortion  
+- Lighting changes  
+- Environmental alterations  
 
-Interaction with objects
+### Intentionally Excluded
+- Combat mechanics  
+- Inventory system  
+- Jump scares  
+- Timers  
 
-Internal monologue and dialogue fragments
+---
 
-Attempt to escape
+## Controls
 
-Partial reset or transition
+| Action | Key |
+|------|----|
+| Movement | WASD |
+| Interaction | E |
+| Skip dialogue | Left Mouse Button |
+| Remove note | Right Mouse Button |
+| Pause menu | Esc |
 
-The loop repeats, but each iteration introduces subtle distortions and changes.
+---
 
-Game Mechanics
-Core Mechanics
+## Level Structure
 
-First-person movement
+### Main Location — Apartment
 
-Camera look
+- Living room  
+- Kitchen  
+- Corridor  
+- Basement (hidden area)  
 
-Environmental interaction (E)
+**Key Feature:**  
+The same location is reused multiple times, with progressive visual and atmospheric changes.
 
-Dialogue system with typing effect
+---
 
-To-Do list used as a narrative tool
+## Narrative Delivery
 
-Secondary Mechanics
+The story is delivered indirectly through:
+- Environmental storytelling  
+- Dialogue fragments  
+- Scripted events  
+- UI distortions  
+- Contradictory instructions  
 
-UI glitches
+No explicit explanations are given, encouraging player interpretation.
 
-Light flickering
+---
 
-Audio distortions
+## Characters
 
-Environmental changes
+### Protagonist
+- No visible appearance  
+- Fragmented identity  
+- Emotional progression: calm → anxious → unstable  
 
-Intentionally Excluded
+### Manager
+- Controls the experiment  
+- Uses gaslighting tactics  
+- Gradually contradicts previous statements  
 
-Combat
+---
 
-Inventory system
+## Audio Design
 
-Jump scares
+- Ambient background tracks  
+- Loop-based tension soundscapes  
+- Audio glitches and distortions  
+- Strategic use of silence  
 
-Timers
+Sound design plays a key role in maintaining immersion.
 
-Controls
-Action	Key
-Movement	WASD
-Interaction	E
-Skip dialogue	LMB
-Remove note	RMB
-Pause menu	Esc
-Level Structure
-Main Location — Apartment
+---
 
-Living room
+## UI / UX Design
 
-Kitchen
+- Minimalistic interface  
+- Digital and terminal-inspired visuals  
+- Task list integrated into gameplay  
+- Dialogue system with typing effect  
 
-Corridor
+UI elements are intentionally restrained to preserve immersion.
 
-Basement (hidden area)
+---
 
-Key Feature:
-The same location repeats multiple times, gradually becoming darker and more hostile to the player.
+## Technical Systems
 
-Narrative Delivery (No Spoilers)
+- Dialogue Manager  
+- Dialogue Triggers  
+- Task / To-Do Manager  
+- Scene Loader  
+- Save and Load System  
 
-The story is conveyed through:
+---
 
-Environmental details
+## UI Design Tools
 
-Dialogues
+**Figma** was used for:
+- Main menu design  
+- Pause menu  
+- UI elements and overlays  
+- In-game interface layouts  
 
-Scripted events
+---
 
-UI distortions
-
-Contradictory instructions from the manager character
-
-The player never receives a full explanation and must form conclusions independently.
-
-Characters
-Protagonist
-
-No visible appearance
-
-Fragmented past
-
-Emotional progression: calm → anxious → desperate
-
-Manager
-
-Gaslighting behavior
-
-Avoids direct answers
-
-Gradually makes narrative “mistakes”
-
-Audio Design
-
-Ambient background music
-
-Looping tension tracks
-
-Glitches, reverses, audio stuttering
-
-Silence used as a psychological tool
-
-UI / UX Design
-
-Minimalistic, digital-style interface
-
-To-Do list as a narrative element
-
-Dialogue system with typing effect
-
-UI distortions (color shifts, symbols) in key moments
-
-Main Menu
-
-Terminal-inspired visual style
-
-Pseudocode aesthetics
-
-Technical Systems
-
-Dialogue Manager
-
-Dialogue Triggers
-
-To-Do Manager
-
-Scene Loader
-
-Save / Load System
-
-UI Design Tools
-
-Figma was used for:
-
-Main menu and pause menu design
-
-UI elements and overlays
-
-In-game documents and panels
-
-Game cover artwork
-
-Project Completion Status
+## Project Status
 
 The prototype includes:
+- Introduction  
+- Narrative progression  
+- Climax  
+- Open-ended resolution  
 
-Introduction
+The ending is intentionally ambiguous.
 
-Climax
+---
 
-False ending
+## Author
 
-Final resolution (left intentionally unexplained)
-
-Author
-
-Solo development project
+Solo development project  
 Game Design, UI/UX, Unity implementation
+
+---
