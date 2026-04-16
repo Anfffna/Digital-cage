@@ -6896,6 +6896,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1088082001208872, guid: 55938a3ad12a56d45af0710ba85a7f67, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1765781586}
+    - targetCorrespondingSourceObject: {fileID: 1088082001208872, guid: 55938a3ad12a56d45af0710ba85a7f67, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1765781589}
   m_SourcePrefab: {fileID: 100100000, guid: 55938a3ad12a56d45af0710ba85a7f67, type: 3}
 --- !u!1 &601535751
 GameObject:
@@ -22215,6 +22218,27 @@ MonoBehaviour:
   playerPivot: {fileID: 20581634}
   hasTakenPhone: 0
   hasPutPhone: 0
+--- !u!65 &1765781589
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1765781581}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.05400006, y: 0.0060000275, z: 0.1290001}
+  m_Center: {x: 0.0000009527802, y: 0.0029990475, z: 3.5762787e-10}
 --- !u!1 &1771209604
 GameObject:
   m_ObjectHideFlags: 0

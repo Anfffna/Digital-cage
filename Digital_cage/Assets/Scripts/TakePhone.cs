@@ -60,12 +60,13 @@ public class TakePhone : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        Debug.Log("НАЖАТИЕ E ДОШЛО ДО ТЕЛЕФОНА");
+
         if (taken) return;
 
-        // Проверяем, можно ли выполнять пункт 0
         if (toDoUI != null && !toDoUI.CanCompleteTask(0))
         {
-            Debug.Log("Нельзя взять телефон, пока не выполнено предыдущее задание!");
+            Debug.Log("НЕЛЬЗЯ ВЗЯТЬ ТЕЛЕФОН: задача недоступна");
             return;
         }
 
@@ -74,13 +75,20 @@ public class TakePhone : MonoBehaviour, IInteractable
 
         if (playerTransform == null)
         {
-            Debug.LogWarning("TakePhone: Player не найден.");
+            Debug.LogWarning("ИГРОК С ТЕГОМ PLAYER НЕ НАЙДЕН");
             return;
         }
 
         float dist = Vector3.Distance(playerTransform.position, transform.position);
-        if (dist > pickupDistance) return;
+        Debug.Log("РАССТОЯНИЕ ДО ТЕЛЕФОНА: " + dist);
 
+        if (dist > pickupDistance)
+        {
+            Debug.Log("СЛИШКОМ ДАЛЕКО ДЛЯ ВЗЯТИЯ");
+            return;
+        }
+
+        Debug.Log("ЗАПУСК КОРУТИНЫ ВЗЯТИЯ");
         StartCoroutine(PlayPhonePickupSequence());
     }
 
